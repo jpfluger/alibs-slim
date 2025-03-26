@@ -1,0 +1,118 @@
+<h1 id="markdown-testing-for-goldmark">Markdown Testing for Goldmark</h1>
+<p>This document contains various Markdown elements for testing with the Goldmark Markdown-to-HTML converter.</p>
+<hr>
+<h2 id="headers">Headers</h2>
+<h3 id="h1-header">H1 Header</h3>
+<h1 id="this-is-an-h1-header">This is an H1 Header</h1>
+<h3 id="h2-header">H2 Header</h3>
+<h2 id="this-is-an-h2-header">This is an H2 Header</h2>
+<h3 id="h3-header">H3 Header</h3>
+<h3 id="this-is-an-h3-header">This is an H3 Header</h3>
+<hr>
+<h2 id="emphasis">Emphasis</h2>
+<p><em>Italic Text</em><br>
+<strong>Bold Text</strong><br>
+<em><strong>Bold and Italic Text</strong></em></p>
+<hr>
+<h2 id="lists">Lists</h2>
+<h3 id="unordered-list">Unordered List</h3>
+<ul>
+<li>Item 1</li>
+<li>Item 2
+<ul>
+<li>Subitem 2.1</li>
+<li>Subitem 2.2</li>
+</ul>
+</li>
+</ul>
+<h3 id="ordered-list">Ordered List</h3>
+<ol>
+<li>First item</li>
+<li>Second item
+<ol>
+<li>Subitem 2.1</li>
+<li>Subitem 2.2</li>
+</ol>
+</li>
+</ol>
+<hr>
+<h2 id="links-and-images">Links and Images</h2>
+<h3 id="links">Links</h3>
+<p><a href="https://www.openai.com">OpenAI</a><br>
+<a href="./b.js">Local File</a><br>
+<a href="./c.html">HTML Embedded File</a></p>
+<h3 id="images">Images</h3>
+<p><img src="https://via.placeholder.com/150" alt="Test Image"></p>
+<hr>
+<h2 id="tables">Tables</h2>
+<table>
+<thead>
+<tr>
+<th>Header 1</th>
+<th>Header 2</th>
+<th>Header 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Row 1 Col 1</td>
+<td>Row 1 Col 2</td>
+<td>Row 1 Col 3</td>
+</tr>
+<tr>
+<td>Row 2 Col 1</td>
+<td>Row 2 Col 2</td>
+<td>Row 2 Col 3</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="code-blocks">Code Blocks</h2>
+<h3 id="inline-code">Inline Code</h3>
+<p>This is <code>inline code</code>.</p>
+<h3 id="code-block-with-backticks">Code Block with Backticks</h3>
+<pre><code class="language-javascript">console.log(&quot;This is a JavaScript code block.&quot;);
+</code></pre>
+<pre><code class="language-python">print(&quot;This is a Python code block.&quot;)
+</code></pre>
+<hr>
+<h2 id="blockquotes">Blockquotes</h2>
+<blockquote>
+<p>This is a blockquote.<br>
+It can span multiple lines.</p>
+</blockquote>
+<hr>
+<h2 id="embedded-javascript-and-html">Embedded JavaScript and HTML</h2>
+<h3 id="linked-javascript">Linked JavaScript</h3>
+
+<h3 id="embedded-javascript">Embedded JavaScript</h3>
+<pre><code class="language-html">&lt;script&gt;
+  console.log(&quot;This is an embedded JavaScript block.&quot;);
+&lt;/script&gt;
+</code></pre>
+<h3 id="linked-html">Linked HTML</h3>
+<p>Click here to see the embedded HTML file.</p>
+<h3 id="embedded-html">Embedded HTML</h3>
+<pre><code class="language-html">&lt;div&gt;
+  &lt;h2&gt;Embedded HTML Example&lt;/h2&gt;
+  &lt;p&gt;This is an HTML snippet embedded directly into Markdown.&lt;/p&gt;
+&lt;/div&gt;
+</code></pre>
+<hr>
+<h2 id="task-lists">Task Lists</h2>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Completed Task</li>
+<li><input disabled="" type="checkbox"> Incomplete Task</li>
+<li><input disabled="" type="checkbox"> Another Incomplete Task</li>
+</ul>
+<hr>
+<h2 id="horizontal-rules">Horizontal Rules</h2>
+<hr>
+<hr>
+<hr>
+<h2 id="miscellaneous">Miscellaneous</h2>
+<h3 id="html-entities">HTML Entities</h3>
+<p>© ® &amp; &lt; &gt;</p>
+<h3 id="footnotes">Footnotes</h3>
+<p>This is a sentence with a footnote.[^1]</p>
+<p>[^1]: This is the footnote text.</p>

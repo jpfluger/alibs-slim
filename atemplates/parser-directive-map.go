@@ -1,0 +1,3 @@
+package atemplates
+
+type StringParserDirectiveMap map[ParseDirectiveType]StringParserDirectiveFunction

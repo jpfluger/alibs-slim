@@ -1,0 +1,19 @@
+{
+    "title": "Job 2",
+    "timeZone": "America/Chicago",
+    "crontab": "0 12 * * *",
+    "runImmediately": true,
+    "runLimit": 1,
+    "startAt": null,
+    "endAt": "2030-08-22T12:00:00Z",
+    "task": {
+        "type": "shell",
+        "shellCommands": [
+            {
+                "type": "python3",
+                "command": "script2.py"
+            }
+        ]
+    },
+    "testBool": true
+}

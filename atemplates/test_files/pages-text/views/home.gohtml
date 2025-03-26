@@ -1,0 +1,28 @@
+{{define "base"}}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{.Title}}</title>
+        <link rel="stylesheet" href="/static/style.css">
+    </head>
+    <body>
+    <header>
+        <h1>{{/*.Header*/}}</h1>
+    </header>
+    <nav>
+        {{/*range .MenuItems*/}}
+            <a href="{{/*.Link*/}}">{{/*.Text*/}}</a>
+        {{/*end*/}}
+    </nav>
+    <main>
+        <h2>{{/*.MainHeading*/}}</h2>
+        <p>{{/*.Content*/}}</p>
+    </main>
+    <footer>
+        <p>{{/*.Footer*/}}</p>
+    </footer>
+    </body>
+    </html>
+{{end}}
