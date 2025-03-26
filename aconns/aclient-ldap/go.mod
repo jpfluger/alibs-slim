@@ -8,7 +8,7 @@ replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.9
-	github.com/jpfluger/alibs-slim v0.9.1
+	github.com/jpfluger/alibs-slim v0.9.0
 	github.com/stretchr/testify v1.10.0
 )
 

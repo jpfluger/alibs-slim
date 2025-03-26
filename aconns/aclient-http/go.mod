@@ -7,7 +7,7 @@ toolchain go1.23.7
 replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
-	github.com/jpfluger/alibs-slim v0.9.1
+	github.com/jpfluger/alibs-slim v0.9.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/stretchr/testify v1.10.0
 )

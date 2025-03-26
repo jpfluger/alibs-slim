@@ -8,7 +8,7 @@ replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
 	github.com/jlaffaye/ftp v0.0.0-20220301011324-fed5bc26b7fa
-	github.com/jpfluger/alibs-slim v0.9.1
+	github.com/jpfluger/alibs-slim v0.9.0
 	github.com/stretchr/testify v1.10.0
 )
 
