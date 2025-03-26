@@ -18,6 +18,7 @@ type UserCredential struct {
 
 	// AuthName is optionally used as the name of the
 	// connection adapter, link or id used for authentication.
+	// Implementation depends on the calling program.
 	AuthName string `json:"authName"`
 
 	WhitelistIPs []string `json:"whitelistIPs,omitempty"`
