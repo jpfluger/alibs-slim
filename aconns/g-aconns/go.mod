@@ -7,16 +7,16 @@ toolchain go1.23.7
 replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
-	github.com/jpfluger/alibs-slim v0.9.0
-	github.com/jpfluger/alibs-slim/aconns/aclient-ftp v0.9.3
-	github.com/jpfluger/alibs-slim/aconns/aclient-http v0.9.3
-	github.com/jpfluger/alibs-slim/aconns/aclient-ldap v0.9.3
-	github.com/jpfluger/alibs-slim/aconns/aclient-redis v0.9.3
-	github.com/jpfluger/alibs-slim/aconns/aclient-smtp v0.9.3
-	github.com/jpfluger/alibs-slim/aconns/adb-mssql v0.9.3
-	github.com/jpfluger/alibs-slim/aconns/adb-mysql v0.9.3
-	github.com/jpfluger/alibs-slim/aconns/adb-oracle v0.9.3
-	github.com/jpfluger/alibs-slim/aconns/adb-pg v0.9.3
+	github.com/jpfluger/alibs-slim v0.9.4
+	github.com/jpfluger/alibs-slim/aconns/aclient-ftp v0.9.4
+	github.com/jpfluger/alibs-slim/aconns/aclient-http v0.9.4
+	github.com/jpfluger/alibs-slim/aconns/aclient-ldap v0.9.4
+	github.com/jpfluger/alibs-slim/aconns/aclient-redis v0.9.4
+	github.com/jpfluger/alibs-slim/aconns/aclient-smtp v0.9.4
+	github.com/jpfluger/alibs-slim/aconns/adb-mssql v0.9.4
+	github.com/jpfluger/alibs-slim/aconns/adb-mysql v0.9.4
+	github.com/jpfluger/alibs-slim/aconns/adb-oracle v0.9.4
+	github.com/jpfluger/alibs-slim/aconns/adb-pg v0.9.4
 	github.com/stretchr/testify v1.10.0
 )
 
@@ -35,7 +35,7 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.7 // indirect
-	github.com/go-ldap/ldap/v3 v3.4.9 // indirect
+	github.com/go-ldap/ldap/v3 v3.4.10 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.25.0 // indirect

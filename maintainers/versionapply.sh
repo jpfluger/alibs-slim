@@ -151,7 +151,7 @@ if $UPDATE_MODE; then
             [[ "$line" =~ ^require\ \( ]] && inside_require=true
             [[ "$line" =~ ^\) ]] && inside_require=false
 
-            if $inside_require && [[ "$line" =~ github.com/jpfluger/alibs-slim/aconns ]]; then
+            if $inside_require && [[ "$line" =~ github.com/jpfluger/alibs-slim ]]; then
                 module=$(echo "$line" | awk '{print $1}')
                 indent=$(echo "$line" | sed 's/\S.*//')
                 new_line="$indent$module v$VERSION"

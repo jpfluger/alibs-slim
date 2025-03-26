@@ -8,7 +8,7 @@ replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
 	github.com/jhillyerd/enmime v1.3.0
-	github.com/jpfluger/alibs-slim v0.9.0
+	github.com/jpfluger/alibs-slim v0.9.4
 	github.com/stretchr/testify v1.10.0
 )
 
