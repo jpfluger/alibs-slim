@@ -2,8 +2,8 @@ package asessions
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"github.com/jpfluger/alibs-slim/auser"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -56,9 +56,9 @@ func TestIsUsernameValid(t *testing.T) {
 
 func TestIsUsernameValidWithOptions(t *testing.T) {
 	lsec := NewLoginSecurity()
-	err := lsec.IsUsernameValidWithOptions("validUsername", auser.USERNAMEVALIDATETYPE_EMAIL_OR_USER, nil)
+	err := lsec.IsUsernameValidWithOptions("validUsername", auser.USERNAMEVALIDITYTYPE_EMAIL_OR_USER, nil)
 	assert.NoError(t, err)
 
-	err = lsec.IsUsernameValidWithOptions("", auser.USERNAMEVALIDATETYPE_EMAIL_OR_USER, nil)
+	err = lsec.IsUsernameValidWithOptions("", auser.USERNAMEVALIDITYTYPE_EMAIL_OR_USER, nil)
 	assert.Error(t, err)
 }

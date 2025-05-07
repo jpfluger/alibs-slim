@@ -9,17 +9,26 @@ import (
 )
 
 // Conn struct represents a connection with an adapter.
+// It encapsulates metadata, role designation, and runtime behavior for a specific integration,
+// such as a database, LDAP service, API endpoint, etc.
 type Conn struct {
 	Ignore      bool     `json:"ignore,omitempty"`      // Ignore flag for the connection.
 	Id          ConnId   `json:"id,omitempty"`          // Unique identifier for the connection.
 	Description string   `json:"description,omitempty"` // Optional description for the connection.
 	Adapter     IAdapter `json:"adapter,omitempty"`     // Adapter associated with the connection.
 
-	// Optional
+	// Optional behavior flags
 	IsRequired  bool `json:"isRequired,omitempty"`  // If true, then this adapter is required.
 	IsBootstrap bool `json:"isBootstrap,omitempty"` // If true, then this adapter is required during boot.
 
-	mu sync.RWMutex // Protects access to the fields.
+	Roles      ConnRoles      `json:"roles,omitempty"`      // Roles assigned to this connection (e.g., master, auth, tenant)
+	TenantInfo ConnTenantInfo `json:"tenantInfo,omitempty"` // Tenant metadata including region, tenant ID, and priority
+
+	// Declares which authentication methods this connection supports (e.g., primary, MFA).
+	// These are used to construct TenantManager.AuthFlows, which determines ordered auth execution.
+	AuthMethods AuthMethods `json:"authMethods,omitempty"`
+
+	mu sync.RWMutex // Protects access to the fields for concurrent usage.
 }
 
 // DoIgnore returns the Ignore flag of the connection.
@@ -180,4 +189,48 @@ func (c *Conn) UnmarshalJSON(data []byte) error {
 	c.Adapter = iAdapter
 
 	return nil
+}
+
+// GetRoles returns the roles associated with the connection.
+func (c *Conn) GetRoles() ConnRoles {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.Roles
+}
+
+// GetTenantInfo returns the tenant info associated with the connection.
+func (c *Conn) GetTenantInfo() ConnTenantInfo {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.TenantInfo
+}
+
+// SetRoles sets the roles for the connection in a thread-safe way.
+func (c *Conn) SetRoles(roles ConnRoles) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.Roles = roles
+}
+
+// SetTenantInfo sets the tenant info for the connection in a thread-safe way.
+func (c *Conn) SetTenantInfo(info ConnTenantInfo) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.TenantInfo = info
+}
+
+// GetAuthMethods returns the list of authentication methods supported by this connection.
+// These methods (e.g., primary, mfa, sspr) are used to build the ordered authentication pipeline.
+func (c *Conn) GetAuthMethods() AuthMethods {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.AuthMethods
+}
+
+// SetAuthMethods updates the list of authentication methods for this connection.
+// Use this when modifying auth configuration dynamically or during loading.
+func (c *Conn) SetAuthMethods(methods AuthMethods) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.AuthMethods = methods
 }

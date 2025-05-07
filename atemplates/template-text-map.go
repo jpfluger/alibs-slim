@@ -72,9 +72,13 @@ func GetTextTemplateFunctions(fmapType TemplateFunctions) *ttemplate.FuncMap {
 			"IsNil":                      IsNil,
 			"AddInteger":                 AddInteger,
 			"SubtractInteger":            SubtractInteger,
+			"UntilInteger":               UntilInteger,
 
 			// Dictionary
 			"Dict": Dict,
+
+			// Array
+			"JoinString": JoinString,
 
 			// Formatting functions.
 			"FormatIntegerComma":                 FormatIntegerComma,

@@ -1,7 +1,7 @@
 package aclient_smtp
 
 import (
-	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/v2"
 	"github.com/jpfluger/alibs-slim/aconns"
 )
 

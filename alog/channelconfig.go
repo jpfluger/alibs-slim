@@ -32,3 +32,9 @@ func (lc LogChannelConfigMap) ApplyOverrides(channel *Channel) {
 		}
 	}
 }
+
+// HasChannel checks if the given channel label exists in the log channel config map.
+func (lc LogChannelConfigMap) HasChannel(channel ChannelLabel) bool {
+	_, exists := lc[channel]
+	return exists
+}

@@ -2,7 +2,6 @@ package auser
 
 import (
 	"fmt"
-	"github.com/jpfluger/alibs-slim/azb"
 	"net/mail"
 	"strings"
 )
@@ -60,12 +59,12 @@ func (e Username) String() string {
 }
 
 // IsValid checks if the Username is valid according to the provided validation type and function.
-func (e Username) IsValid(uvType azb.ZBType, fn FNUsernameValidate) bool {
+func (e Username) IsValid(uvType UsernameValidityType, fn FNUsernameValidate) bool {
 	return e.IsValidElseError(uvType, fn) == nil
 }
 
 // IsValidElseError returns an error if the Username is not valid according to the provided validation type and function.
-func (e Username) IsValidElseError(uvType azb.ZBType, fn FNUsernameValidate) error {
+func (e Username) IsValidElseError(uvType UsernameValidityType, fn FNUsernameValidate) error {
 	// Helper function to check email format.
 	fnCheckEmail := func() error {
 		if e.IsEmail() {
@@ -76,37 +75,38 @@ func (e Username) IsValidElseError(uvType azb.ZBType, fn FNUsernameValidate) err
 
 	// Validate based on the type of username validation required.
 	switch uvType {
-	case USERNAMEVALIDATETYPE_EMAIL_OR_USER:
+	case USERNAMEVALIDITYTYPE_EMAIL_OR_USER:
 		if e.ExpectEmail() {
 			return fnCheckEmail()
 		}
 		fallthrough // If not an email, validate as a regular username.
-	case USERNAMEVALIDATETYPE_USER:
+	case USERNAMEVALIDITYTYPE_USER:
 		if fn != nil {
 			return fn(string(e))
 		}
 		return ValidateUsername(string(e))
-	case USERNAMEVALIDATETYPE_EMAIL:
+	case USERNAMEVALIDITYTYPE_EMAIL:
 		return fnCheckEmail()
+	case USERNAMEVALIDITYTYPE_USER_MINL1_MAXL99:
+		return ValidateUsernameWithOptions(string(e), 1, 99)
 	default:
 		return fmt.Errorf("unknown username validation type")
 	}
 }
-
-// Constants for different types of username validation.
-const (
-	USERNAMEVALIDATETYPE_EMAIL_OR_USER = azb.ZBType("email-or-user")
-	USERNAMEVALIDATETYPE_EMAIL         = azb.ZBType("email")
-	USERNAMEVALIDATETYPE_USER          = azb.ZBType("user")
-)
 
 // FNUsernameValidate defines a function type for custom username validation.
 type FNUsernameValidate func(target string) error
 
 // ValidateUsername checks if the target string is a valid username according to specific rules.
 func ValidateUsername(target string) error {
-	if len(target) < 4 || len(target) > 49 {
-		return fmt.Errorf("must have 4 to 49 characters")
+	return ValidateUsernameWithOptions(target, 4, 49)
+}
+
+func ValidateUsernameWithOptions(target string, minLen, maxLen int) error {
+	length := len(target)
+
+	if length < minLen || length > maxLen {
+		return fmt.Errorf("must have %d to %d characters", minLen, maxLen)
 	}
 	if strings.HasPrefix(target, "-") || strings.Contains(target, "--") || strings.HasSuffix(target, "-") {
 		return fmt.Errorf("single hyphens allowed but not at the start or end")

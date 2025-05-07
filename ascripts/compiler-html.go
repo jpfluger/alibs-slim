@@ -56,8 +56,8 @@ func (c *CompilerHTML) RenderTemplate(params ...interface{}) (string, error) {
 	}
 
 	// Use the first parameter if provided, otherwise pass nil to the template execution.
-	var param interface{}
-	if len(params) > 0 {
+	var param interface{} = map[string]interface{}{}
+	if len(params) > 0 && params[0] != nil {
 		param = params[0]
 	}
 

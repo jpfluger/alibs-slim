@@ -1,0 +1,7 @@
+{"level":"info","msg":"Service started","ts":"2024-04-01T10:00:00Z"}
+{"level":"debug","msg":"Connecting to database","ts":"2024-04-01T10:00:01Z"}
+{"level":"info","msg":"Request received","ts":"2024-04-01T10:00:02Z"}
+{"level":"warn","msg":"Disk space low","ts":"2024-04-01T10:00:03Z"}
+{"level":"error","msg":"Database connection failed","ts":"2024-04-01T10:00:04Z"}
+{"level":"info","msg":"Job completed","ts":"2024-04-01T10:00:05Z"}
+{"level":"error","msg":"Service timeout","ts":"2024-04-01T10:00:06Z"}

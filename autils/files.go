@@ -744,3 +744,50 @@ func ScanFileByLine(filePath string, fnScanLine FNScanLine) error {
 	}
 	return nil
 }
+
+// ListFilenamesInDir returns a list of filenames (not full paths) in the given directory.
+func ListFilenamesInDir(dirPath string) []string {
+	return ListFilenamesInDirWithExtensions(dirPath)
+}
+
+// ListFilenamesInDirWithExtensions returns a list of filenames (not full paths) in the given directory
+// and filters them by the given extensions. If no extensions are passed, it returns all files.
+func ListFilenamesInDirWithExtensions(dirPath string, exts ...string) []string {
+	var filenames []string
+
+	if strings.TrimSpace(dirPath) == "" {
+		return filenames
+	}
+
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return filenames
+	}
+
+	extMap := make(map[string]struct{})
+	for _, ext := range exts {
+		ext = strings.ToLower(strings.TrimSpace(ext))
+		if ext != "" {
+			if !strings.HasPrefix(ext, ".") {
+				ext = "." + ext
+			}
+			extMap[ext] = struct{}{}
+		}
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			name := entry.Name()
+			if len(extMap) == 0 {
+				filenames = append(filenames, name)
+			} else {
+				ext := strings.ToLower(filepath.Ext(name))
+				if _, ok := extMap[ext]; ok {
+					filenames = append(filenames, name)
+				}
+			}
+		}
+	}
+
+	return filenames
+}

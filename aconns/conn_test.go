@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jpfluger/alibs-slim/areflect"
+	"github.com/jpfluger/alibs-slim/auuids"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -268,4 +269,33 @@ func TestConn_TestRequired(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConn_GetRoles(t *testing.T) {
+	conn := &Conn{
+		Roles: ConnRoles{CONNROLE_MASTER, CONNROLE_AUTH},
+	}
+
+	roles := conn.GetRoles()
+	assert.Len(t, roles, 2)
+	assert.Contains(t, roles, CONNROLE_MASTER)
+	assert.Contains(t, roles, CONNROLE_AUTH)
+}
+
+func TestConn_GetTenantInfo(t *testing.T) {
+	tenantId := auuids.NewUUID()
+	conn := &Conn{
+		TenantInfo: ConnTenantInfo{
+			Region:   "us-east",
+			TenantId: tenantId,
+			Priority: 1,
+			Label:    "Primary",
+		},
+	}
+
+	info := conn.GetTenantInfo()
+	assert.Equal(t, "us-east", info.Region)
+	assert.Equal(t, tenantId.String(), info.TenantId.String())
+	assert.Equal(t, 1, info.Priority)
+	assert.Equal(t, "Primary", info.Label)
 }

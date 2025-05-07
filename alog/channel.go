@@ -56,7 +56,7 @@ func (ch *Channel) Initialize(prov IChannelProvisioner) error {
 			ch.FileLoggerOptions = prov.GetFileLoggerOptions()
 			if ch.FileLoggerOptions == nil {
 				ch.FileLoggerOptions = &FileLoggerOptions{
-					MaxSize:    5,
+					MaxSize:    25,
 					MaxBackups: 10,
 					MaxAge:     14,
 					Compress:   true,

@@ -31,14 +31,15 @@ import (
 //	   // unmarshal b to Data
 //	}
 type ZAction struct {
-	Event     ZBType `json:"event"`     // Event type, e.g., "zurl-dialog" for dialog events.
-	Mod       ZBType `json:"mod"`       // Module type, e.g., "paginate" for pagination.
-	Id        string `json:"zid"`       // Unique identifier for the action.
-	IdParent  string `json:"zidParent"` // Parent identifier for nested actions.
-	Sequence  string `json:"zseq"`      // Sequence number for ordering actions.
-	LoopType  ZBType `json:"loopType"`  // Type of loop, if applicable.
-	PageOn    int    `json:"pageOn"`    // Current page number for pagination.
-	PageLimit int    `json:"pageLimit"` // Number of items per page for pagination.
+	Event     ZBType   `json:"event"`     // Event type, e.g., "zurl-dialog" for dialog events.
+	Mod       ZBType   `json:"mod"`       // Module type, e.g., "paginate" for pagination.
+	Id        string   `json:"zid"`       // Unique identifier for the action.
+	IdParent  string   `json:"zidParent"` // Parent identifier for nested actions.
+	Sequence  string   `json:"zseq"`      // Sequence number for ordering actions.
+	LoopType  ZBType   `json:"loopType"`  // Type of loop, if applicable.
+	PageOn    int      `json:"pageOn"`    // Current page number for pagination.
+	PageLimit int      `json:"pageLimit"` // Number of items per page for pagination.
+	ViewPort  ViewPort `json:"viewPort"`
 }
 
 const (

@@ -3,6 +3,7 @@ package aconns
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jpfluger/alibs-slim/auuids"
 )
 
 const TYPEMANAGER_CONNADAPTERS = "connadapters"
@@ -15,6 +16,9 @@ type IConn interface {
 	GetIsRequired() bool
 	GetIsBootstrap() bool
 	Validate() error
+	GetRoles() ConnRoles
+	GetTenantInfo() ConnTenantInfo
+	GetAuthMethods() AuthMethods
 }
 
 type IConns []IConn
@@ -208,4 +212,51 @@ func (m IConnMap) ToAdapterMap() IAdapterMap {
 		}
 	}
 	return adapters
+}
+
+// FilterByRole returns all connections that have the specified role.
+func (conns IConns) FilterByRole(role ConnRole) IConns {
+	var filtered IConns
+	for _, conn := range conns {
+		if conn.GetRoles().HasRole(role) {
+			filtered = append(filtered, conn)
+		}
+	}
+	return filtered
+}
+
+// FilterByAnyRole returns connections that match *any* of the given roles.
+func (conns IConns) FilterByAnyRole(roles ConnRoles) IConns {
+	var filtered IConns
+	for _, conn := range conns {
+		for _, r := range conn.GetRoles() {
+			if roles.HasRole(r) {
+				filtered = append(filtered, conn)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
+// GetTenantInfos returns a slice of ConnTenantInfo from all connections.
+func (conns IConns) GetTenantInfos() ConnTenantInfos {
+	var infos ConnTenantInfos
+	for _, conn := range conns {
+		info := conn.GetTenantInfo()
+		if !info.TenantId.IsNil() {
+			infos = append(infos, info)
+		}
+	}
+	return infos
+}
+
+// FindByTenantId returns the first connection that matches the given tenant ID.
+func (conns IConns) FindByTenantId(tenantId auuids.UUID) (IConn, bool) {
+	for _, conn := range conns {
+		if conn.GetTenantInfo().TenantId == tenantId {
+			return conn, true
+		}
+	}
+	return nil, false
 }

@@ -2,7 +2,7 @@ package aclient_smtp
 
 import (
 	"fmt"
-	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/v2"
 	"net/mail"
 	"strings"
 )

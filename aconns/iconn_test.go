@@ -2,6 +2,7 @@ package aconns
 
 import (
 	"encoding/json"
+	"github.com/jpfluger/alibs-slim/auuids"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -255,4 +256,87 @@ func TestIConnMap_ToAdapterMap(t *testing.T) {
 	for _, conn := range connMap {
 		assert.Equal(t, conn.GetAdapter(), adapterMap[conn.GetAdapter().GetName()])
 	}
+}
+
+func TestIConns_FilterByRole(t *testing.T) {
+	masterId := NewConnId()
+	authId := NewConnId()
+
+	conns := IConns{
+		&Conn{
+			Id:    masterId,
+			Roles: ConnRoles{CONNROLE_MASTER},
+		},
+		&Conn{
+			Id:    authId,
+			Roles: ConnRoles{CONNROLE_AUTH},
+		},
+		&Conn{
+			Id:    NewConnId(),
+			Roles: ConnRoles{CONNROLE_MASTER, CONNROLE_AUTH},
+		},
+	}
+
+	filtered := conns.FilterByRole(CONNROLE_AUTH)
+	for _, conn := range filtered {
+		assert.Contains(t, conn.GetRoles(), CONNROLE_AUTH)
+	}
+	assert.GreaterOrEqual(t, len(filtered), 2)
+}
+
+func TestIConns_FindByTenantId(t *testing.T) {
+	targetTenant := auuids.NewUUID()
+	otherTenant := auuids.NewUUID()
+
+	conns := IConns{
+		&Conn{
+			Id: NewConnId(),
+			TenantInfo: ConnTenantInfo{
+				TenantId: otherTenant,
+			},
+		},
+		&Conn{
+			Id: NewConnId(),
+			TenantInfo: ConnTenantInfo{
+				TenantId: targetTenant,
+			},
+		},
+	}
+
+	conn, found := conns.FindByTenantId(targetTenant)
+	assert.True(t, found)
+	assert.Equal(t, targetTenant.String(), conn.GetTenantInfo().TenantId.String())
+
+	_, notFound := conns.FindByTenantId(auuids.NewUUID())
+	assert.False(t, notFound)
+}
+
+func TestIConns_GetTenantInfos(t *testing.T) {
+	id1 := auuids.NewUUID()
+	id2 := auuids.NewUUID()
+
+	conns := IConns{
+		&Conn{
+			TenantInfo: ConnTenantInfo{
+				TenantId: id1,
+				Region:   "us-west",
+				Priority: 0,
+			},
+		},
+		&Conn{
+			TenantInfo: ConnTenantInfo{
+				TenantId: id2,
+				Region:   "eu-central",
+				Priority: 1,
+			},
+		},
+		&Conn{
+			TenantInfo: ConnTenantInfo{}, // Empty TenantId, should be excluded
+		},
+	}
+
+	infos := conns.GetTenantInfos()
+	assert.Len(t, infos, 2)
+	assert.True(t, infos.HasTenant(id1))
+	assert.True(t, infos.HasTenant(id2))
 }

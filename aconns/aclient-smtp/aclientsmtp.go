@@ -3,7 +3,7 @@ package aclient_smtp
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/jhillyerd/enmime"
+	"github.com/jhillyerd/enmime/v2"
 	"github.com/jpfluger/alibs-slim/autils"
 	"net/smtp"
 	"strings"

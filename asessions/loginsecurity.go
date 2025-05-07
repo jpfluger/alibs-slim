@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jpfluger/alibs-slim/atags"
 	"github.com/jpfluger/alibs-slim/auser"
-	"github.com/jpfluger/alibs-slim/azb"
 	"time"
 )
 
@@ -55,11 +54,11 @@ func (ls *LoginSecurity) IsExcessiveUsernamesAttempts(max int) error {
 
 // IsUsernameValid checks if the provided username is valid based on default validation rules.
 func (ls *LoginSecurity) IsUsernameValid(username auser.Username) error {
-	return ls.IsUsernameValidWithOptions(username, auser.USERNAMEVALIDATETYPE_EMAIL_OR_USER, nil)
+	return ls.IsUsernameValidWithOptions(username, auser.USERNAMEVALIDITYTYPE_EMAIL_OR_USER, nil)
 }
 
 // IsUsernameValidWithOptions checks if the provided username is valid based on specified validation rules and custom function.
-func (ls *LoginSecurity) IsUsernameValidWithOptions(username auser.Username, uvType azb.ZBType, fn auser.FNUsernameValidate) error {
+func (ls *LoginSecurity) IsUsernameValidWithOptions(username auser.Username, uvType auser.UsernameValidityType, fn auser.FNUsernameValidate) error {
 	if !username.IsValid(uvType, fn) {
 		return fmt.Errorf("invalid username")
 	}

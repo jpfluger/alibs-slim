@@ -49,16 +49,16 @@ func TestUsernameDomain(t *testing.T) {
 
 // TestUsernameIsValid checks the IsValid method for Username.
 func TestUsernameIsValid(t *testing.T) {
-	assert.True(t, Username("user@example.com").IsValid(USERNAMEVALIDATETYPE_EMAIL, nil))
-	assert.False(t, Username("user").IsValid(USERNAMEVALIDATETYPE_EMAIL, nil))
-	assert.True(t, Username("user").IsValid(USERNAMEVALIDATETYPE_USER, nil))
+	assert.True(t, Username("user@example.com").IsValid(USERNAMEVALIDITYTYPE_EMAIL, nil))
+	assert.False(t, Username("user").IsValid(USERNAMEVALIDITYTYPE_EMAIL, nil))
+	assert.True(t, Username("user").IsValid(USERNAMEVALIDITYTYPE_USER, nil))
 }
 
 // TestUsernameIsValidElseError checks the IsValidElseError method for Username.
 func TestUsernameIsValidElseError(t *testing.T) {
-	assert.Nil(t, Username("user@example.com").IsValidElseError(USERNAMEVALIDATETYPE_EMAIL, nil))
-	assert.NotNil(t, Username("user").IsValidElseError(USERNAMEVALIDATETYPE_EMAIL, nil))
-	assert.Nil(t, Username("user").IsValidElseError(USERNAMEVALIDATETYPE_USER, nil))
+	assert.Nil(t, Username("user@example.com").IsValidElseError(USERNAMEVALIDITYTYPE_EMAIL, nil))
+	assert.NotNil(t, Username("user").IsValidElseError(USERNAMEVALIDITYTYPE_EMAIL, nil))
+	assert.Nil(t, Username("user").IsValidElseError(USERNAMEVALIDITYTYPE_USER, nil))
 }
 
 // TestValidateUsername checks the ValidateUsername function.

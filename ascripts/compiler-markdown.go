@@ -3,11 +3,11 @@ package ascripts
 import (
 	"bytes"
 	"fmt"
+	"github.com/jpfluger/alibs-slim/atemplates"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
-	"github.com/jpfluger/alibs-slim/atemplates"
 	htemplate "html/template"
 	"strings"
 )
@@ -59,8 +59,8 @@ func (c *CompilerMarkdown) Render(body string, params ...interface{}) (string, e
 	}
 
 	// Use the first parameter if provided, otherwise pass nil to the template execution.
-	var param interface{}
-	if len(params) > 0 {
+	var param interface{} = map[string]interface{}{}
+	if len(params) > 0 && params[0] != nil {
 		param = params[0]
 	}
 

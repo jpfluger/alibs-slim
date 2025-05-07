@@ -1,9 +1,9 @@
 package ahttp
 
 import (
-	"github.com/labstack/echo/v4"
 	"github.com/jpfluger/alibs-slim/arob"
 	"github.com/jpfluger/alibs-slim/asessions"
+	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
@@ -63,6 +63,57 @@ func RHStatus(c echo.Context, code int, routeId HttpRouteId, newPD NewPageData) 
 	return c.Render(http.StatusOK, "status.gohtml", newPD(PSC().MustUrl(routeId), "Status", asessions.CastLoginSessionPermFromEchoContext(c), pageStatusDefault))
 }
 
+// RHStatusWithDefault requires a PageStatusDefault parameter, and it calls within it NewRHPageData.
+// It returns http.StatusOK. If JSON is detected, it automatically creates and returns a rob error object.
+//
+//	return ahttp.RHStatusWithDefault(c, &ahttp.PageStatusDefault{
+//		HTTPCode:     http.StatusOK, // Return 200 OK, since the page itself is valid otherwise provide the exact http status code.
+//		Title:        "My Custom Title",
+//		MessageTitle: "Failed Read",
+//		Message:      "Unable to read information.",
+//		RouteId:      ahttp.RPAGE_MY_PAGE,
+//	})
+func RHStatusWithDefault(c echo.Context, pageStatus *PageStatusDefault) error {
+
+	if pageStatus == nil {
+		pageStatus = &PageStatusDefault{}
+	}
+
+	// Check RouteID is available.
+	if pageStatus.RouteId.IsEmpty() {
+		pageStatus.RouteId = RPAGE_ROOT_SERVICE_UNAVAILABLE
+	}
+
+	// Check http code is set
+	if pageStatus.HTTPCode == 0 {
+		pageStatus.HTTPCode = http.StatusServiceUnavailable
+	}
+
+	if pageStatus.Title == "" {
+		pageStatus.Title = "Status"
+	}
+
+	return RHStatusWithData(c, pageStatus)
+}
+
+// RHStatusWithData requires a IPageStatus parameter.
+// If JSON is detected, it automatically creates and returns a rob error object.
+func RHStatusWithData(c echo.Context, data IPageStatus) error {
+	if IsRequestContentType(c, CHECK_MIME_TYPE_JSON) {
+		message := data.StatusMessage()
+		return c.JSON(http.StatusOK, arob.NewROBWithError(arob.ROBERRORFIELD_SYSTEM, arob.ROBMessage(message)))
+	}
+	return c.Render(http.StatusOK, "status.gohtml", NewRHPageData(PSC().MustUrl(data.GetRouteId()), data.PageTitle(), asessions.CastLoginSessionPermFromEchoContext(c), data))
+}
+
+type IPageStatus interface {
+	GetRouteId() HttpRouteId
+	PageTitle() string
+	StatusCode() int
+	StatusTitle() string
+	StatusMessage() string
+}
+
 // PageStatusDefault is a default struct to display status for web pages.
 // This may be too limiting to your situation, especially for multi-language support.
 type PageStatusDefault struct {
@@ -70,6 +121,19 @@ type PageStatusDefault struct {
 	MessageTitle string
 	Message      string
 	RouteId      HttpRouteId
+	Title        string
+}
+
+func (p *PageStatusDefault) GetRouteId() HttpRouteId {
+	return p.RouteId
+}
+
+func (p *PageStatusDefault) StatusCode() int {
+	return p.HTTPCode
+}
+
+func (p *PageStatusDefault) PageTitle() string {
+	return p.Title
 }
 
 func (p *PageStatusDefault) StatusTitle() string {

@@ -75,6 +75,7 @@ func GetHTMLTemplateFunctions(fmapType TemplateFunctions) *htemplate.FuncMap {
 			"IsNil":                      IsNil,
 			"AddInteger":                 AddInteger,
 			"SubtractInteger":            SubtractInteger,
+			"UntilInteger":               UntilInteger,
 
 			// Formatting functions.
 			"FormatIntegerComma":                 FormatIntegerComma,
@@ -89,6 +90,9 @@ func GetHTMLTemplateFunctions(fmapType TemplateFunctions) *htemplate.FuncMap {
 
 			// Dictionary
 			"Dict": Dict,
+
+			// Array
+			"JoinString": JoinString,
 
 			// HTML-specific functions to ensure safe rendering.
 			"SafeURL":               SafeURL,
@@ -319,6 +323,19 @@ func AddInteger(a int, b int) int {
 	return a + b
 }
 
+// UntilInteger returns a slice of integers from 0 up to (but not including) n.
+// It is commonly used to simulate a basic for-loop in templates.
+//
+// For example, UntilInteger(3) returns []int{0, 1, 2}, which is useful
+// for iterating with index values inside a Go HTML template.
+func UntilInteger(n int) []int {
+	out := make([]int, n)
+	for i := 0; i < n; i++ {
+		out[i] = i
+	}
+	return out
+}
+
 // SubtractInteger subtracts one integer from another and returns the result.
 func SubtractInteger(a int, b int) int {
 	return a - b
@@ -369,4 +386,12 @@ func Dict(values ...interface{}) map[string]interface{} {
 		d[key] = values[i+1]
 	}
 	return d
+}
+
+// JoinString, which works just like strings and is safe for use in Go HTML templates.
+func JoinString(items []string, sep string) string {
+	if items == nil || len(items) == 0 {
+		return ""
+	}
+	return strings.Join(items, sep)
 }

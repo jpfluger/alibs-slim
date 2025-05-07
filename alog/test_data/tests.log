@@ -1,0 +1,10 @@
+[INFO] Server started
+[DEBUG] Loading configuration
+[INFO] Connected to database
+[WARN] Disk space low
+[ERROR] Failed to connect to service A
+[INFO] Request received from 127.0.0.1
+[ERROR] Timeout on service B
+[DEBUG] Cache hit for key=xyz
+[INFO] Job completed successfully
+[WARN] Memory usage high
