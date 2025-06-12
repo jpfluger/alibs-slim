@@ -1,0 +1,10 @@
+{
+  "app": {
+    "port": 9090
+  },
+  // Debug versus production
+  "debug": false,
+  "features": {
+    "signup": true
+  }
+}

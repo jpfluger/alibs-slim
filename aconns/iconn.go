@@ -16,9 +16,9 @@ type IConn interface {
 	GetIsRequired() bool
 	GetIsBootstrap() bool
 	Validate() error
-	GetRoles() ConnRoles
-	GetTenantInfo() ConnTenantInfo
-	GetAuthMethods() AuthMethods
+	GetTenantInfo() *ConnTenantInfo
+	GetAuthScopes() AuthScopes
+	GetAuthUsages() AuthUsages
 }
 
 type IConns []IConn
@@ -214,23 +214,23 @@ func (m IConnMap) ToAdapterMap() IAdapterMap {
 	return adapters
 }
 
-// FilterByRole returns all connections that have the specified role.
-func (conns IConns) FilterByRole(role ConnRole) IConns {
+// FilterByAuthScope returns all connections that have the specified auth scope.
+func (conns IConns) FilterByAuthScope(authScope AuthScope) IConns {
 	var filtered IConns
 	for _, conn := range conns {
-		if conn.GetRoles().HasRole(role) {
+		if conn.GetAuthScopes().Has(authScope) {
 			filtered = append(filtered, conn)
 		}
 	}
 	return filtered
 }
 
-// FilterByAnyRole returns connections that match *any* of the given roles.
-func (conns IConns) FilterByAnyRole(roles ConnRoles) IConns {
+// FilterByAnyAuthScope returns connections that match *any* of the given auth scopes.
+func (conns IConns) FilterByAnyRole(authScopes AuthScopes) IConns {
 	var filtered IConns
 	for _, conn := range conns {
-		for _, r := range conn.GetRoles() {
-			if roles.HasRole(r) {
+		for _, a := range conn.GetAuthScopes() {
+			if authScopes.Has(a) {
 				filtered = append(filtered, conn)
 				break
 			}

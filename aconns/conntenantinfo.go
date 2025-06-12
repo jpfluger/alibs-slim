@@ -3,6 +3,7 @@ package aconns
 import (
 	"errors"
 	"fmt"
+	"github.com/jpfluger/alibs-slim/anetwork"
 	"github.com/jpfluger/alibs-slim/auuids"
 	"strings"
 )
@@ -26,6 +27,9 @@ type ConnTenantInfo struct {
 	// For example, this could be "US-West Primary" or "Client-A Staging".
 	// Not required for system logic but useful for diagnostics and UI mapping.
 	Label string `json:"label,omitempty"`
+
+	// Admin-related to start/stop tenant, ops, UI, etc.
+	Endpoint anetwork.NetURL `json:"endpoint,omitempty"`
 }
 
 // Validate checks that the required fields in ConnTenantInfo are set correctly.
@@ -43,7 +47,7 @@ func (ti ConnTenantInfo) Validate() error {
 }
 
 // ConnTenantInfos is a slice of ConnTenantInfo structs.
-type ConnTenantInfos []ConnTenantInfo
+type ConnTenantInfos []*ConnTenantInfo
 
 // Validate checks all entries in the list for correctness.
 func (infos ConnTenantInfos) Validate() error {
@@ -66,13 +70,13 @@ func (infos ConnTenantInfos) HasTenant(id auuids.UUID) bool {
 }
 
 // GetByTenantId returns the ConnTenantInfo for the specified tenant, if present.
-func (infos ConnTenantInfos) GetByTenantId(id auuids.UUID) (ConnTenantInfo, bool) {
+func (infos ConnTenantInfos) GetByTenantId(id auuids.UUID) (*ConnTenantInfo, bool) {
 	for _, info := range infos {
 		if info.TenantId == id {
 			return info, true
 		}
 	}
-	return ConnTenantInfo{}, false
+	return nil, false
 }
 
 // FilterByRegion returns all tenant infos that match the specified region (case-insensitive).

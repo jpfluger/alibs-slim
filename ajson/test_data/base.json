@@ -1,0 +1,11 @@
+{
+  "app": {
+    "name": "myapp",
+    "port": 8080
+  },
+  "debug": true,
+  "features": {
+    "login": true,
+    "signup": false
+  }
+}

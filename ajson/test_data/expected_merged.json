@@ -1,0 +1,11 @@
+{
+  "app": {
+    "name": "myapp",
+    "port": 9090
+  },
+  "debug": false,
+  "features": {
+    "login": true,
+    "signup": true
+  }
+}

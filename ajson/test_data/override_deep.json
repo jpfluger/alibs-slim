@@ -1,0 +1,20 @@
+{
+  "services": {
+    "web": {
+      "timeout": 60,
+      "features": {
+        "gzip": true
+      },
+      "tags": ["v2", "stable"]
+    }
+  },
+  "global": {
+    "logging": {
+      "level": "debug"
+    },
+    "theme": "dark"
+  },
+  "metadata": {
+    "build": 1002
+  }
+}

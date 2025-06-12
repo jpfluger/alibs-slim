@@ -21,12 +21,10 @@ type Conn struct {
 	IsRequired  bool `json:"isRequired,omitempty"`  // If true, then this adapter is required.
 	IsBootstrap bool `json:"isBootstrap,omitempty"` // If true, then this adapter is required during boot.
 
-	Roles      ConnRoles      `json:"roles,omitempty"`      // Roles assigned to this connection (e.g., master, auth, tenant)
-	TenantInfo ConnTenantInfo `json:"tenantInfo,omitempty"` // Tenant metadata including region, tenant ID, and priority
+	TenantInfo *ConnTenantInfo `json:"tenantInfo,omitempty"` // Tenant metadata including region, tenant ID, and priority
 
-	// Declares which authentication methods this connection supports (e.g., primary, MFA).
-	// These are used to construct TenantManager.AuthFlows, which determines ordered auth execution.
-	AuthMethods AuthMethods `json:"authMethods,omitempty"`
+	AuthScopes AuthScopes `json:"authScopes,omitempty"` // e.g. ["domain", "module"]
+	AuthUsages AuthUsages `json:"authUsages,omitempty"` // e.g. ["mfa", "primary"]
 
 	mu sync.RWMutex // Protects access to the fields for concurrent usage.
 }
@@ -82,10 +80,17 @@ func (c *Conn) Validate() error {
 	if err := c.Adapter.Validate(); err != nil {
 		return fmt.Errorf("failed adapter validate; %v", err)
 	}
-	// Auto-set the ID if it is not already set.
+
+	// Ensure ID is set
 	if c.Id.IsNil() {
 		c.Id = NewConnId()
 	}
+
+	// Ensure TenantInfo is not nil (backward compatible safety)
+	if c.TenantInfo == nil {
+		c.TenantInfo = &ConnTenantInfo{}
+	}
+
 	return nil
 }
 
@@ -191,46 +196,50 @@ func (c *Conn) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// GetRoles returns the roles associated with the connection.
-func (c *Conn) GetRoles() ConnRoles {
+// GetAuthScopes returns the scopes associated with the connection.
+// These scopes determine where in the system (e.g., master, domain) this connection is valid.
+func (c *Conn) GetAuthScopes() AuthScopes {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.Roles
+	return c.AuthScopes
+}
+
+// SetAuthScopes sets the scopes for the connection in a thread-safe way.
+func (c *Conn) SetAuthScopes(scopes AuthScopes) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.AuthScopes = scopes
 }
 
 // GetTenantInfo returns the tenant info associated with the connection.
-func (c *Conn) GetTenantInfo() ConnTenantInfo {
+func (c *Conn) GetTenantInfo() *ConnTenantInfo {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	if c.TenantInfo == nil {
+		// Don't mutate, just return a blank safe value
+		return &ConnTenantInfo{}
+	}
 	return c.TenantInfo
 }
 
-// SetRoles sets the roles for the connection in a thread-safe way.
-func (c *Conn) SetRoles(roles ConnRoles) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.Roles = roles
-}
-
 // SetTenantInfo sets the tenant info for the connection in a thread-safe way.
-func (c *Conn) SetTenantInfo(info ConnTenantInfo) {
+func (c *Conn) SetTenantInfo(info *ConnTenantInfo) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.TenantInfo = info
 }
 
-// GetAuthMethods returns the list of authentication methods supported by this connection.
-// These methods (e.g., primary, mfa, sspr) are used to build the ordered authentication pipeline.
-func (c *Conn) GetAuthMethods() AuthMethods {
+// GetAuthUsages returns the list of auth usages this connection supports.
+// Usages like "primary", "mfa", or "sspr" define how this connection is invoked in the auth pipeline.
+func (c *Conn) GetAuthUsages() AuthUsages {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.AuthMethods
+	return c.AuthUsages
 }
 
-// SetAuthMethods updates the list of authentication methods for this connection.
-// Use this when modifying auth configuration dynamically or during loading.
-func (c *Conn) SetAuthMethods(methods AuthMethods) {
+// SetAuthUsages updates the list of auth usages for this connection.
+func (c *Conn) SetAuthUsages(usages AuthUsages) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.AuthMethods = methods
+	c.AuthUsages = usages
 }

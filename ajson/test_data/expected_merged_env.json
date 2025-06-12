@@ -1,0 +1,13 @@
+{
+  "app": {
+    "name": "myapp",
+    "port": 9090,
+    "env": "production"
+  },
+  "debug": false,
+  "features": {
+    "login": true,
+    "signup": true,
+    "billing": true
+  }
+}

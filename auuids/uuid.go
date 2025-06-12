@@ -216,3 +216,27 @@ func (uuids UUIDs) Clean() UUIDs {
 	}
 	return arr
 }
+
+// ToString returns a comma-separated string of all UUIDs in the slice.
+// Example: "uuid1,uuid2,uuid3"
+func (uuids UUIDs) ToString() string {
+	var sb strings.Builder
+	for i, id := range uuids {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(id.String())
+	}
+	return sb.String()
+}
+
+// ToStringArray returns a slice of strings, where each element is the string
+// representation of a UUID in the UUIDs slice.
+// Example: []string{"uuid1", "uuid2", "uuid3"}
+func (uuids UUIDs) ToStringArray() []string {
+	out := make([]string, 0, len(uuids))
+	for _, id := range uuids {
+		out = append(out, id.String())
+	}
+	return out
+}

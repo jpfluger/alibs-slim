@@ -1,0 +1,10 @@
+{
+  "app": {
+    "name": "myapp",
+    "port": 8888
+  },
+  "debug": false,
+  "features": {
+    "login": true
+  }
+}

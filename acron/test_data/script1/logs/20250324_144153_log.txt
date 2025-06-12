@@ -1,4 +1,0 @@
-{"level":"info","jobPlanId":"0195c9ac-ffee-7bb9-bc45-573ec0f1cf60","time":"2025-03-24T14:41:53-05:00","message":"job started"}
-{"level":"info","jobPlanId":"0195c9ac-ffee-7bb9-bc45-573ec0f1cf60","time":"2025-03-24T14:41:53-05:00","message":"shell command 1 of 1: begin"}
-{"level":"info","jobPlanId":"0195c9ac-ffee-7bb9-bc45-573ec0f1cf60","time":"2025-03-24T14:41:53-05:00","message":"shell command 1 of 1: finish"}
-{"level":"info","jobPlanId":"0195c9ac-ffee-7bb9-bc45-573ec0f1cf60","time":"2025-03-24T14:41:53-05:00","message":"job ended"}

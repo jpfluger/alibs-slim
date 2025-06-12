@@ -159,35 +159,35 @@ func (m *Manager) Test(failQuiet bool) error {
 	return nil
 }
 
-// ToTenantManager transforms a Manager into a structured TenantManager by grouping connections by their roles,
-// and initializing the authentication pipeline from the auth-capable connections.
-func (m *Manager) ToTenantManager() *TenantManager {
-	auths := IConns{}
-	masters := IConns{}
-	tenants := IConns{}
-
-	for _, conn := range m.Conns {
-		roles := conn.GetRoles()
-
-		if roles.HasRole(CONNROLE_AUTH) {
-			auths = append(auths, conn)
-		}
-		if roles.HasRole(CONNROLE_MASTER) {
-			masters = append(masters, conn)
-		}
-		if roles.HasRole(CONNROLE_TENANT) {
-			tenants = append(tenants, conn)
-		}
-	}
-
-	tm := &TenantManager{
-		Auths:   auths,
-		Masters: masters,
-		Tenants: tenants,
-	}
-
-	// Build the auth pipeline from the Auths list.
-	tm.AuthFlows = tm.BuildAuthPipeline()
-
-	return tm
-}
+//// ToTenantManager transforms a Manager into a structured TenantManager by grouping connections by their roles,
+//// and initializing the authentication pipeline from the auth-capable connections.
+//func (m *Manager) ToTenantManager() *__back.TenantManager {
+//	auths := IConns{}
+//	masters := IConns{}
+//	tenants := IConns{}
+//
+//	for _, conn := range m.Conns {
+//		roles := conn.GetRoles()
+//
+//		if roles.HasRole(CONNROLE_AUTH) {
+//			auths = append(auths, conn)
+//		}
+//		if roles.HasRole(CONNROLE_MASTER) {
+//			masters = append(masters, conn)
+//		}
+//		if roles.HasRole(CONNROLE_TENANT) {
+//			tenants = append(tenants, conn)
+//		}
+//	}
+//
+//	tm := &__back.TenantManager{
+//		Auths:   auths,
+//		Masters: masters,
+//		Tenants: tenants,
+//	}
+//
+//	// Build the auth pipeline from the Auths list.
+//	tm.AuthFlows = tm.BuildAuthPipeline()
+//
+//	return tm
+//}

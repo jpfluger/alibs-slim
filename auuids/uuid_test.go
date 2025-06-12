@@ -3,8 +3,8 @@ package auuids
 import (
 	"encoding/json"
 	"github.com/gofrs/uuid/v5"
-	"github.com/stretchr/testify/assert"
 	"github.com/jpfluger/alibs-slim/autils"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -231,5 +231,43 @@ func TestUID_FromString(t *testing.T) {
 		err := uid.FromString("invalid-uuid")
 		assert.Error(t, err)
 		assert.True(t, uid.IsNil())
+	})
+}
+
+func TestUUIDsToString(t *testing.T) {
+	t.Run("ToString with multiple UUIDs", func(t *testing.T) {
+		id1 := NewUUID()
+		id2 := NewUUID()
+
+		uuids := UUIDs{id1, id2}
+		expected := id1.String() + "," + id2.String()
+
+		assert.Equal(t, expected, uuids.ToString(), "ToString should return comma-separated UUIDs")
+	})
+
+	t.Run("ToString with empty list", func(t *testing.T) {
+		uuids := UUIDs{}
+		assert.Equal(t, "", uuids.ToString(), "ToString should return empty string for empty slice")
+	})
+}
+
+func TestUUIDsToStringArray(t *testing.T) {
+	t.Run("ToStringArray with multiple UUIDs", func(t *testing.T) {
+		id1 := NewUUID()
+		id2 := NewUUID()
+
+		ids := UUIDs{id1, id2}
+		result := ids.ToStringArray()
+
+		assert.Len(t, result, 2, "ToStringArray should return 2 elements")
+		assert.Equal(t, id1.String(), result[0], "First UUID should match")
+		assert.Equal(t, id2.String(), result[1], "Second UUID should match")
+	})
+
+	t.Run("ToStringArray with empty list", func(t *testing.T) {
+		ids := UUIDs{}
+		result := ids.ToStringArray()
+
+		assert.Empty(t, result, "ToStringArray should return empty slice for empty UUIDs")
 	})
 }

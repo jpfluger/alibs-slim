@@ -264,22 +264,22 @@ func TestIConns_FilterByRole(t *testing.T) {
 
 	conns := IConns{
 		&Conn{
-			Id:    masterId,
-			Roles: ConnRoles{CONNROLE_MASTER},
+			Id:         masterId,
+			AuthScopes: AuthScopes{AUTHSCOPE_MASTER},
 		},
 		&Conn{
-			Id:    authId,
-			Roles: ConnRoles{CONNROLE_AUTH},
+			Id:         authId,
+			AuthScopes: AuthScopes{AUTHSCOPE_MASTER},
 		},
 		&Conn{
-			Id:    NewConnId(),
-			Roles: ConnRoles{CONNROLE_MASTER, CONNROLE_AUTH},
+			Id:         NewConnId(),
+			AuthScopes: AuthScopes{AUTHSCOPE_MASTER, AUTHSCOPE_MASTER},
 		},
 	}
 
-	filtered := conns.FilterByRole(CONNROLE_AUTH)
+	filtered := conns.FilterByAuthScope(AUTHSCOPE_MASTER)
 	for _, conn := range filtered {
-		assert.Contains(t, conn.GetRoles(), CONNROLE_AUTH)
+		assert.Contains(t, conn.GetAuthScopes(), AUTHSCOPE_MASTER)
 	}
 	assert.GreaterOrEqual(t, len(filtered), 2)
 }
@@ -291,13 +291,13 @@ func TestIConns_FindByTenantId(t *testing.T) {
 	conns := IConns{
 		&Conn{
 			Id: NewConnId(),
-			TenantInfo: ConnTenantInfo{
+			TenantInfo: &ConnTenantInfo{
 				TenantId: otherTenant,
 			},
 		},
 		&Conn{
 			Id: NewConnId(),
-			TenantInfo: ConnTenantInfo{
+			TenantInfo: &ConnTenantInfo{
 				TenantId: targetTenant,
 			},
 		},
@@ -317,21 +317,21 @@ func TestIConns_GetTenantInfos(t *testing.T) {
 
 	conns := IConns{
 		&Conn{
-			TenantInfo: ConnTenantInfo{
+			TenantInfo: &ConnTenantInfo{
 				TenantId: id1,
 				Region:   "us-west",
 				Priority: 0,
 			},
 		},
 		&Conn{
-			TenantInfo: ConnTenantInfo{
+			TenantInfo: &ConnTenantInfo{
 				TenantId: id2,
 				Region:   "eu-central",
 				Priority: 1,
 			},
 		},
 		&Conn{
-			TenantInfo: ConnTenantInfo{}, // Empty TenantId, should be excluded
+			TenantInfo: &ConnTenantInfo{}, // Empty TenantId, should be excluded
 		},
 	}
 

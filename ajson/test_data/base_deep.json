@@ -1,0 +1,24 @@
+{
+  "services": {
+    "web": {
+      "port": 3000,
+      "timeout": 30,
+      "features": {
+        "caching": false,
+        "gzip": false
+      },
+      "tags": ["beta", "v1"]
+    }
+  },
+  "global": {
+    "logging": {
+      "level": "info",
+      "enabled": true
+    },
+    "theme": null
+  },
+  "metadata": {
+    "version": "1.0",
+    "build": 1001
+  }
+}

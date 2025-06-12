@@ -271,21 +271,21 @@ func TestConn_TestRequired(t *testing.T) {
 	}
 }
 
-func TestConn_GetRoles(t *testing.T) {
+func TestConn_GetAuthScopes(t *testing.T) {
 	conn := &Conn{
-		Roles: ConnRoles{CONNROLE_MASTER, CONNROLE_AUTH},
+		AuthScopes: AuthScopes{AUTHSCOPE_MASTER, AUTHSCOPE_ADMIN},
 	}
 
-	roles := conn.GetRoles()
-	assert.Len(t, roles, 2)
-	assert.Contains(t, roles, CONNROLE_MASTER)
-	assert.Contains(t, roles, CONNROLE_AUTH)
+	authScopes := conn.GetAuthScopes()
+	assert.Len(t, authScopes, 2)
+	assert.Contains(t, authScopes, AUTHSCOPE_MASTER)
+	assert.Contains(t, authScopes, AUTHSCOPE_ADMIN)
 }
 
 func TestConn_GetTenantInfo(t *testing.T) {
 	tenantId := auuids.NewUUID()
 	conn := &Conn{
-		TenantInfo: ConnTenantInfo{
+		TenantInfo: &ConnTenantInfo{
 			Region:   "us-east",
 			TenantId: tenantId,
 			Priority: 1,
