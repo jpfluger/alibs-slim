@@ -164,3 +164,13 @@ func ConvertJSONToMap(input []byte) (map[string]interface{}, error) {
 	}
 	return output, nil
 }
+
+
+// MustParseJSONToInterface unmarshals a RawMessage into a target struct pointer.
+// If unmarshaling fails, func returns false.
+func MustParseJSONToInterface(raw json.RawMessage, target interface{}) bool {
+	if err := json.Unmarshal(raw, target); err != nil {
+		return false
+	}
+	return true
+}

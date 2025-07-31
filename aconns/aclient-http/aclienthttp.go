@@ -1,18 +1,13 @@
 package aclient_http
 
 import (
-	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"github.com/jpfluger/alibs-slim/aconns"
 	"github.com/jpfluger/alibs-slim/anetwork"
-	"io"
-	"net/http"
 	"net/url"
-	"strings"
 	"sync"
-	"time"
 )
 
 const (
@@ -85,43 +80,16 @@ func (a *AClientHTTP) Get(hob *HOB) ([]byte, string, error) {
 }
 
 // GetWithOptions performs a GET request with options and returns the response body and content type.
-func (a *AClientHTTP) GetWithOptions(hob *HOB) (body []byte, respContentType string, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("recovered from panic: %v", r)
-		}
-	}()
-
-	if hob == nil {
-		return nil, "", fmt.Errorf("HOB is nil")
-	}
-
+func (a *AClientHTTP) GetWithOptions(hob *HOB) ([]byte, string, error) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	myUrl, err := a.joinUrl(hob.Path)
+	fullURL, err := a.joinUrl(hob.Path)
 	if err != nil {
 		return nil, "", err
 	}
 
-	client := &http.Client{Timeout: time.Duration(hob.ConnectionTimeout) * time.Second}
-	resp, err := client.Get(myUrl)
-	if err != nil {
-		return nil, "", err
-	}
-	defer resp.Body.Close()
-
-	respContentType = resp.Header.Get("Content-Type")
-	if hob.ExpectedType != "" && !strings.HasPrefix(respContentType, hob.ExpectedType) {
-		return nil, respContentType, fmt.Errorf("unexpected content type: %s", respContentType)
-	}
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, respContentType, err
-	}
-
-	return body, respContentType, nil
+	return DoHTTPGet(fullURL, hob)
 }
 
 // Post performs a POST request with the given payload and returns the response body and content type.
@@ -130,65 +98,16 @@ func (a *AClientHTTP) Post(hob *HOB) ([]byte, string, error) {
 }
 
 // PostWithOptions performs a POST request with options and returns the response body and content type.
-func (a *AClientHTTP) PostWithOptions(hob *HOB) (body []byte, respContentType string, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("recovered from panic: %v", r)
-		}
-	}()
-
-	if hob == nil {
-		return nil, "", fmt.Errorf("HOB is nil")
-	}
-
+func (a *AClientHTTP) PostWithOptions(hob *HOB) ([]byte, string, error) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	myUrl, err := a.joinUrl(hob.Path)
+	fullURL, err := a.joinUrl(hob.Path)
 	if err != nil {
 		return nil, "", err
 	}
 
-	hob.ContentType = strings.TrimSpace(hob.ContentType)
-	if hob.ContentType == "" {
-		return nil, "", fmt.Errorf("content type not defined")
-	}
-
-	var data []byte
-	if len(hob.Raw) > 0 {
-		data = hob.Raw
-	} else {
-		switch hob.ContentType {
-		case "application/json":
-			data, err = json.Marshal(hob.Payload)
-		case "application/xml":
-			data, err = xml.Marshal(hob.Payload)
-		default:
-			return nil, "", fmt.Errorf("unsupported content type: %s", hob.ContentType)
-		}
-		if err != nil {
-			return nil, "", err
-		}
-	}
-
-	client := &http.Client{Timeout: time.Duration(hob.ConnectionTimeout) * time.Second}
-	resp, err := client.Post(myUrl, hob.ContentType, bytes.NewBuffer(data))
-	if err != nil {
-		return nil, "", err
-	}
-	defer resp.Body.Close()
-
-	respContentType = resp.Header.Get("Content-Type")
-	if hob.ExpectedType != "" && !strings.HasPrefix(respContentType, hob.ExpectedType) {
-		return nil, respContentType, fmt.Errorf("unexpected content type: %s", respContentType)
-	}
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, respContentType, err
-	}
-
-	return body, respContentType, nil
+	return DoHTTPPost(fullURL, hob)
 }
 
 // GetJSON performs a GET request and parses the response as JSON into the provided interface.

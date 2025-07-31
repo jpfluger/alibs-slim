@@ -53,4 +53,28 @@ func TestIfUUIDNilElse(t *testing.T) {
 	}
 }
 
-// Additional tests for other functions can be added similarly.
+func TestArrayContains(t *testing.T) {
+	tests := []struct {
+		name     string
+		arr      []interface{}
+		target   interface{}
+		expected bool
+	}{
+		{"found string", []interface{}{"a", "b", "c"}, "b", true},
+		{"not found string", []interface{}{"a", "b", "c"}, "z", false},
+		{"found int", []interface{}{1, 2, 3}, 2, true},
+		{"not found int", []interface{}{1, 2, 3}, 4, false},
+		{"empty array", []interface{}{}, "anything", false},
+		{"mixed types", []interface{}{"a", 1, true}, 1, true},
+		{"type mismatch", []interface{}{"1", "2"}, 2, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ArrayContains(tc.arr, tc.target)
+			if result != tc.expected {
+				t.Errorf("expected %v, got %v", tc.expected, result)
+			}
+		})
+	}
+}

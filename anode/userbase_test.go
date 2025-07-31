@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/jpfluger/alibs-slim/aemail"
+	"github.com/stretchr/testify/assert"
 )
 
 var jwtSecretKey []byte
@@ -86,13 +86,16 @@ var testJSON = `{
   "vault": {
     "credential": {
       "username": "testuser",
-      "password": "$argon2id$v=19$m=65536,t=1,p=4$VX77b4N9XFMLgELAy7ZhRw==$GzZYY3bA86LFmorUUs85up1UydiMYqhEk2D8HlL1mRc=",
+      "password": "$argon2id$v=19$m=19456,t=2,p=1$TxjhQM+quoPvmn4TPv+kFQ$VIe0/RpXQIMa82DLQkTrxpDxw5HWs7rrrK/AWy+St8Y",
       "whitelistIPs": ["192.168.1.1", "10.0.0.1", "127.0.0.1", "::1/128"],
       "accessToken": "",
       "refreshToken": ""
     }
   }
 }`
+
+// StdEncoding
+// "password": "$argon2id$v=19$m=65536,t=1,p=4$VX77b4N9XFMLgELAy7ZhRw==$GzZYY3bA86LFmorUUs85up1UydiMYqhEk2D8HlL1mRc=",
 
 func TestUserConfig_Validate(t *testing.T) {
 	var uc UserConfig
@@ -105,6 +108,8 @@ func TestUserConfig_Validate(t *testing.T) {
 	assert.False(t, uc.Vault.Credential.GetIsTokenValid())
 	assert.Equal(t, 4, len(uc.Vault.Credential.GetWhitelistIPs()))
 	assert.True(t, uc.Vault.Credential.MatchUsernamePassword("testuser", "password123"))
+	//hashedPassword, err := acrypt.HashArgon2id("password123", nil)
+	//fmt.Println(hashedPassword)
 }
 
 func TestUserConfig_GetEmail(t *testing.T) {

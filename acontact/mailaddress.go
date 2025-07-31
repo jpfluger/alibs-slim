@@ -142,6 +142,42 @@ func (add *MailAddress) ToHTML(langType string) string {
 	return formatter.Format(add.Address)
 }
 
+func (add *MailAddress) ToLines() []string {
+	if add == nil {
+		return nil
+	}
+
+	var lines []string
+	appendIf := func(s string) {
+		s = strings.TrimSpace(s)
+		if s != "" {
+			lines = append(lines, s)
+		}
+	}
+
+	appendIf(add.Line1)
+	appendIf(add.Line2)
+	appendIf(add.Line3)
+
+	var cityParts []string
+	for _, s := range []string{add.Locality, add.Region, add.PostalCode} {
+		if strings.TrimSpace(s) != "" {
+			cityParts = append(cityParts, strings.TrimSpace(s))
+		}
+	}
+	if len(cityParts) > 0 {
+		lines = append(lines, strings.Join(cityParts, ", "))
+	}
+
+	appendIf(add.CountryCode)
+
+	if len(lines) == 0 && add.Raw != "" {
+		lines = append(lines, strings.TrimSpace(add.Raw))
+	}
+
+	return lines
+}
+
 //// HasAddressComplete checks if the essential fields of the address are filled.
 //func (add *MailAddress) HasAddressComplete() bool {
 //	return strings.TrimSpace(add.Addr1) != "" &&

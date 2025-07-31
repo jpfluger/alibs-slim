@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
 // AppPathMap is a map that associates AppPathKeys with their path values.
 type AppPathMap map[AppPathKey]string
+
+// NewAppPathMap creates a new AppPathMap.
+func NewAppPathMap() AppPathMap {
+	return make(AppPathMap)
+}
 
 // SetPath sets the path value for a given AppPathKey.
 func (apm *AppPathMap) SetPath(key AppPathKey, pathValue string) {
@@ -97,25 +103,25 @@ func (apm *AppPathMap) EnsureDirs(dirRoot string) error {
 		}
 	}
 
-	for key, val := range *apm {
-		if key.IsDir() {
+	for _, key := range apm.SortedKeys() {
+		val := strings.TrimSpace((*apm)[key])
+		if !key.IsDir() {
+			continue // Only process directories here
+		}
 
-			val = strings.TrimSpace(val)
-			if val == "" {
-				return fmt.Errorf("invalid path for %s", key.String())
-			}
+		if val == "" {
+			return fmt.Errorf("invalid path for %s", key.String())
+		}
 
-			// Resolve relative paths
-			if !filepath.IsAbs(val) && dirRoot != "" {
-				val = filepath.Join(dirRoot, val)
-				(*apm)[key] = val // Store the resolved absolute path back in apm
-			}
+		// Resolve relative path.
+		if !filepath.IsAbs(val) && dirRoot != "" {
+			val = filepath.Join(dirRoot, val)
+			(*apm)[key] = val
+		}
 
-			// Check if directory exists before creating it
-			if _, err := os.Stat(val); os.IsNotExist(err) {
-				if err = os.MkdirAll(val, PATH_CHMOD_DIR_LIMIT); err != nil {
-					return fmt.Errorf("failed to create directory %s: %v", val, err)
-				}
+		if _, err := os.Stat(val); os.IsNotExist(err) {
+			if err = os.MkdirAll(val, PATH_CHMOD_DIR_LIMIT); err != nil {
+				return fmt.Errorf("failed to create directory %s: %v", val, err)
 			}
 		}
 	}
@@ -161,4 +167,73 @@ func (apm *AppPathMap) RecreateDir(key AppPathKey, mode os.FileMode) error {
 	}
 
 	return nil
+}
+
+// IsRelative checks if the path value associated with the given AppPathKey is a non-empty relative path.
+// It returns true if the path is not empty and is not an absolute path.
+// Returns false if the path is empty or already absolute.
+func (apm *AppPathMap) IsRelative(key AppPathKey) bool {
+	val := apm.GetPath(key)
+	return val != "" && !filepath.IsAbs(val)
+}
+
+// SortedKeys returns the AppPathKeys in sorted order.
+func (apm *AppPathMap) SortedKeys() []AppPathKey {
+	var keys []AppPathKey
+	for key := range *apm {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].String() < keys[j].String()
+	})
+	return keys
+}
+
+// Clone returns a deep copy of the AppPathMap.
+// It preserves all keys and values in a new map instance.
+func (m AppPathMap) Clone() AppPathMap {
+	clone := make(AppPathMap, len(m))
+	for k, v := range m {
+		if k.IsEmpty() {
+			continue
+		}
+		clone[k] = v
+	}
+	return clone
+}
+
+// Merge returns a new AppPathMap resulting from merging the current map (`base`)
+// with one or more overrides. If a key exists in both, the override wins.
+func (base AppPathMap) Merge(overrides ...AppPathMap) AppPathMap {
+	merged := base.Clone()
+	for _, override := range overrides {
+		for k, v := range override {
+			if k.IsEmpty() {
+				continue
+			}
+			merged[k] = v
+		}
+	}
+	return merged
+}
+
+// MergeAbs merges base paths with overrides, ensuring all resulting values are absolute.
+// Any relative paths in the override will be joined with `baseDir`.
+func (base AppPathMap) MergeAbs(baseDir string, overrides ...AppPathMap) AppPathMap {
+	merged := base.Clone()
+	for _, override := range overrides {
+		if override == nil {
+			continue
+		}
+		for k, v := range override {
+			if k.IsEmpty() || strings.TrimSpace(v) == "" {
+				continue
+			}
+			if !filepath.IsAbs(v) {
+				v = filepath.Join(baseDir, v)
+			}
+			merged[k] = filepath.Clean(v)
+		}
+	}
+	return merged
 }

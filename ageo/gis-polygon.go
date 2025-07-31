@@ -1,4 +1,4 @@
-package autils
+package ageo
 
 // GISPolygon represents a polygon with a set of points, background color, and opacity.
 type GISPolygon struct {

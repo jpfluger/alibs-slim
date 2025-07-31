@@ -21,6 +21,47 @@ const (
 	ROBTYPE_EMERGENCY ROBType = "emergency"
 )
 
+// NormalizeROBType maps shorthand or non-standard ROBType values to predefined constants.
+// This ensures consistent internal usage of ROB message types across the system.
+//
+// For example:
+//
+//	"emerg" → ROBTYPE_EMERGENCY
+//	"crit"  → ROBTYPE_CRITICAL
+//	"err"   → ROBTYPE_ERROR
+//	"warn"  → ROBTYPE_WARNING
+//	""      → ROBTYPE_DEBUG (default fallback)
+//
+// Values that already match predefined constants are returned as-is.
+func NormalizeROBType(robType ROBType) ROBType {
+	switch robType {
+	case "emerg":
+		return ROBTYPE_EMERGENCY
+	case "crit":
+		return ROBTYPE_CRITICAL
+	case "err":
+		return ROBTYPE_ERROR
+	case "warn":
+		return ROBTYPE_WARNING
+	case "":
+		return ROBTYPE_DEBUG
+	default:
+		break
+	}
+
+	if robType != ROBTYPE_EMERGENCY &&
+		robType != ROBTYPE_CRITICAL &&
+		robType != ROBTYPE_WARNING &&
+		robType != ROBTYPE_INFO &&
+		robType != ROBTYPE_NOTICE &&
+		robType != ROBTYPE_DEBUG &&
+		robType != ROBTYPE_ERROR {
+		return ROBTYPE_ERROR
+	}
+
+	return robType
+}
+
 // IsEmpty checks if the ROBType is empty after trimming whitespace.
 func (rt ROBType) IsEmpty() bool {
 	return strings.TrimSpace(string(rt)) == ""

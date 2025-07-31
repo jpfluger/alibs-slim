@@ -333,3 +333,31 @@ func TestRequireWithOption_HandlesRelativePaths(t *testing.T) {
 		}
 	}
 }
+
+func TestAppPathMap_IsRelative(t *testing.T) {
+	apm := AppPathMap{
+		"DIR_ABS":   "/usr/local/etc",
+		"DIR_REL":   "data/logs",
+		"DIR_EMPTY": "",
+	}
+
+	// Absolute path should return false
+	if apm.IsRelative("DIR_ABS") {
+		t.Errorf("IsRelative() failed, expected false for absolute path, got true")
+	}
+
+	// Relative path should return true
+	if !apm.IsRelative("DIR_REL") {
+		t.Errorf("IsRelative() failed, expected true for relative path, got false")
+	}
+
+	// Empty path should return false
+	if apm.IsRelative("DIR_EMPTY") {
+		t.Errorf("IsRelative() failed, expected false for empty path, got true")
+	}
+
+	// Non-existent key should return false
+	if apm.IsRelative("DIR_UNKNOWN") {
+		t.Errorf("IsRelative() failed, expected false for unknown key, got true")
+	}
+}

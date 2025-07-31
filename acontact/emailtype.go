@@ -19,6 +19,7 @@ const (
 	EMAILTYPE_SALES     = EmailType("sales")     // Sales-related email address
 	EMAILTYPE_MARKETING = EmailType("marketing") // Marketing email address
 	EMAILTYPE_NO_REPLY  = EmailType("noreply")   // No-reply email address
+	EMAILTYPE_LEGAL     = EmailType("legal")     // Legal email address
 )
 
 // IsEmpty checks if the EmailType is empty after trimming spaces.

@@ -7,9 +7,10 @@ import (
 
 // Predefined constants for different deployment types.
 const (
-	DEPLOYMENTTYPE_DEV  DeploymentType = "dev"
-	DEPLOYMENTTYPE_QA   DeploymentType = "qa"
-	DEPLOYMENTTYPE_PROD DeploymentType = "prod"
+	DEPLOYMENTTYPE_LOCAL DeploymentType = "local"
+	DEPLOYMENTTYPE_DEV   DeploymentType = "dev"
+	DEPLOYMENTTYPE_QA    DeploymentType = "qa"
+	DEPLOYMENTTYPE_PROD  DeploymentType = "prod"
 )
 
 // DeploymentType represents a type of deployment as a string.
@@ -72,4 +73,32 @@ func (dts DeploymentTypes) Contains(dt DeploymentType) bool {
 		}
 	}
 	return false
+}
+
+// IsKnownType returns true if the given deployment type is one of the recognized types.
+func (dts DeploymentTypes) IsKnownType(dt DeploymentType) bool {
+	known := DeploymentTypes{
+		DEPLOYMENTTYPE_LOCAL,
+		DEPLOYMENTTYPE_DEV,
+		DEPLOYMENTTYPE_QA,
+		DEPLOYMENTTYPE_PROD,
+	}
+	return known.Contains(dt)
+}
+
+// SelectPreferredDefault returns the preferred deployment type in priority order:
+// prod > qa > dev > local. Returns DEPLOYMENTTYPE_LOCAL if none are found.
+func (dts DeploymentTypes) SelectPreferredDefault() DeploymentType {
+	priority := []DeploymentType{
+		DEPLOYMENTTYPE_PROD,
+		DEPLOYMENTTYPE_QA,
+		DEPLOYMENTTYPE_DEV,
+		DEPLOYMENTTYPE_LOCAL,
+	}
+	for _, candidate := range priority {
+		if dts.Contains(candidate) {
+			return candidate
+		}
+	}
+	return DEPLOYMENTTYPE_LOCAL
 }

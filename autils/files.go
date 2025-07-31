@@ -15,21 +15,38 @@ import (
 )
 
 // Define file permissions constants with comments explaining their purpose.
-// https://stackoverflow.com/questions/14249467/os-mkdir-and-os-mkdirall-permission-value
-// NOTE: FileMode on Unix systems is effected by the underlying OS umask.
-// Set the Umask to "0" globally prior to this function to have consistent behavior.
+// See SetProcessUmask to set "0" globally prior to this function to have consistent behavior.
 const (
-	PATH_CHMOD_DIR            os.FileMode = 0755 // Default permission for directories
-	PATH_CHMOD_FILE           os.FileMode = 0644 // Default permission for files
-	PATH_CHMOD_DIR_LIMIT      os.FileMode = 0744 // Default permission for directories
-	PATH_CHMOD_DIR_FULL_PERMS os.FileMode = 0777 // Full permissions for directories
-	PATH_CHMOD_SCRIPTS        os.FileMode = 0744 // Executable permissions for scripts
-	PATH_CHMOD_DIR_SECRETS    os.FileMode = 0700 // Restricted permissions for secret directories
-	PATH_CHMOD_FILE_SECRETS   os.FileMode = 0600 // Restricted permissions for secret files
+	PATH_CHMOD_DIR             os.FileMode = 0755 // Default for generic dirs
+	PATH_CHMOD_FILE            os.FileMode = 0644 // Default for generic files
+	PATH_CHMOD_DIR_LIMIT       os.FileMode = 0744 // Limited dir perms
+	PATH_CHMOD_DIR_FULL_PERMS  os.FileMode = 0777 // Full perms (rare)
+	PATH_CHMOD_SCRIPTS         os.FileMode = 0744 // Scripts executable
+	PATH_CHMOD_DIR_SECRETS     os.FileMode = 0700 // Secrets: owner only
+	PATH_CHMOD_FILE_SECRETS    os.FileMode = 0600 // Secret files
+	PATH_CHMOD_DIR_OWNER_GROUP os.FileMode = 0750 // Owner rwx, group rx
 )
 
-// SetUMask sets the process-wide file mode creation mask.
-func SetUMask(umask int) {
+// SetProcessUmask sets the process-wide file mode creation mask (umask).
+//
+// The umask controls the default permission bits for **newly created files and directories**
+// in the current process. It is **subtracted** from the default permissions requested by
+// system calls like `os.Mkdir`, `os.Create`, or `net.Listen("unix")`.
+//
+// Typical uses:
+//
+//   - ✅ Secure runtime temp files: Set `umask(0077)` so all created files/dirs are owner-only (`700` or `600`).
+//   - ✅ Allow group collaboration: Set `umask(0027)` so files are owner+group accessible (`750` or `640`).
+//   - ✅ Sockets: UNIX domain sockets inherit the umask — adjust to control who can connect.
+//
+// **Example:** A daemon might tighten its umask early during `main()` to ensure any temp config,
+// secrets, or IPC sockets are not accidentally world-readable.
+//
+// Note: This affects only the **current process** and child processes that inherit the environment.
+// It does **not** affect other processes.
+//
+// For permanent system-wide behavior, the OS or container runtime usually sets the default umask.
+func SetProcessUmask(umask int) {
 	syscall.Umask(umask)
 }
 
@@ -790,4 +807,45 @@ func ListFilenamesInDirWithExtensions(dirPath string, exts ...string) []string {
 	}
 
 	return filenames
+}
+
+// EvaluateMockRootDir sets up the real RootDir based on a mock seed directory.
+// - If DeleteMockRoot is true, RootDir will be forcefully wiped first.
+// - If RootDir does not exist, MockRootDir will be copied into it.
+func EvaluateMockRootDir(mockDir string, rootDir string, deleteRoot bool) error {
+	mockDir = strings.TrimSpace(mockDir)
+	rootDir = strings.TrimSpace(rootDir)
+
+	if mockDir == "" || rootDir == "" {
+		return nil // nothing to do
+	}
+
+	// Check if mockDir exists
+	_, err := ResolveDirectory(mockDir)
+	if err != nil {
+		return fmt.Errorf("mock root dir does not exist: %v", err)
+	}
+
+	// Check if rootDir exists
+	dirRootExists := false
+	if _, err = ResolveDirectory(rootDir); err == nil {
+		dirRootExists = true
+	}
+
+	// Optionally delete existing root
+	if dirRootExists && deleteRoot {
+		if err = os.RemoveAll(rootDir); err != nil {
+			return fmt.Errorf("failed to delete existing rootDir (%s): %w", rootDir, err)
+		}
+		dirRootExists = false
+	}
+
+	// Copy mock -> root if root is missing
+	if !dirRootExists {
+		if err = CopyDir(mockDir, rootDir); err != nil {
+			return fmt.Errorf("failed to copy mock root (%s) to rootDir (%s): %w", mockDir, rootDir, err)
+		}
+	}
+
+	return nil
 }

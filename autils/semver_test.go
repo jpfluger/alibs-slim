@@ -61,3 +61,75 @@ func TestSemver_IsSemverVersionInvalid(t *testing.T) {
 		t.Errorf("IsSemverVersionInvalid() = nil, want error for empty version")
 	}
 }
+
+func TestAreSemverVersionsValid(t *testing.T) {
+	v := func(s string) *semver.Version {
+		parsed, err := semver.NewVersion(s)
+		if err != nil {
+			t.Fatalf("failed to parse version %q: %v", s, err)
+		}
+		return parsed
+	}
+
+	nilVersion := (*semver.Version)(nil)
+	zeroVersion := v("0.0.0")
+	validVersion := v("1.2.3")
+
+	cases := []struct {
+		name     string
+		versions []*semver.Version
+		wantErr  bool
+	}{
+		{"all valid", []*semver.Version{validVersion, v("2.0.0")}, false},
+		{"one is 0.0.0", []*semver.Version{validVersion, zeroVersion}, true},
+		{"nil version", []*semver.Version{validVersion, nilVersion}, true},
+		{"single nil", []*semver.Version{nilVersion}, true},
+		{"only 0.0.0", []*semver.Version{zeroVersion}, true},
+		{"empty input", []*semver.Version{}, false}, // this is up to your intent
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := AreSemverVersionsValid(tc.versions...)
+			if tc.wantErr && err == nil {
+				t.Errorf("expected error, got nil")
+			}
+			if !tc.wantErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestHasAnyValidSemverVersion(t *testing.T) {
+	v := func(s string) *semver.Version {
+		parsed, err := semver.NewVersion(s)
+		if err != nil {
+			t.Fatalf("failed to parse version %q: %v", s, err)
+		}
+		return parsed
+	}
+
+	cases := []struct {
+		name     string
+		versions []*semver.Version
+		want     bool
+	}{
+		{"all nil", []*semver.Version{nil, nil}, false},
+		{"all empty", []*semver.Version{v("0.0.0"), v("0.0.0")}, false},
+		{"mixed nil and 0.0.0", []*semver.Version{nil, v("0.0.0")}, false},
+		{"one valid", []*semver.Version{nil, v("1.2.3")}, true},
+		{"multiple valid", []*semver.Version{v("1.0.0"), v("2.0.0")}, true},
+		{"only one valid among bad", []*semver.Version{v("0.0.0"), v("1.0.0"), nil}, true},
+		{"empty input", []*semver.Version{}, false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := HasAnyValidSemverVersion(tc.versions...)
+			if got != tc.want {
+				t.Errorf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

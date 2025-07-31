@@ -13,19 +13,7 @@ type ROBError struct {
 
 // NewROBError creates a new ROBError with the specified type and message.
 func NewROBError(errType ROBType, message ROBMessage) *ROBError {
-	// Normalize the error type to predefined constants.
-	switch errType {
-	case "emerg":
-		errType = ROBTYPE_EMERGENCY
-	case "crit":
-		errType = ROBTYPE_CRITICAL
-	case "warn":
-		errType = ROBTYPE_WARNING
-	// No need for cases that match the constants directly.
-	default:
-		errType = ROBTYPE_ERROR
-	}
-	return &ROBError{Type: errType, Message: message}
+	return &ROBError{Type: NormalizeROBType(errType), Message: message}
 }
 
 // NewROBErrorWithField creates a new ROBError with the specified type, message, and field.

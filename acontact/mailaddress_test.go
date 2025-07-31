@@ -136,3 +136,84 @@ func TestMailAddress_ToHTML(t *testing.T) {
 		t.Errorf("MailAddress.ToHTML() should return a non-empty string")
 	}
 }
+
+func TestMailAddress_ToLines(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    *MailAddress
+		expected []string
+	}{
+		{
+			name: "Structured address with all fields",
+			input: &MailAddress{
+				Address: address.Address{
+					Line1:       "123 Main St",
+					Line2:       "Suite 456",
+					Locality:    "Anytown",
+					Region:      "CA",
+					PostalCode:  "12345",
+					CountryCode: "US",
+				},
+			},
+			expected: []string{
+				"123 Main St",
+				"Suite 456",
+				"Anytown, CA, 12345",
+				"US",
+			},
+		},
+		{
+			name: "Structured address with missing optional fields",
+			input: &MailAddress{
+				Address: address.Address{
+					Line1:       "456 Elm St",
+					Locality:    "Othertown",
+					CountryCode: "GB",
+				},
+			},
+			expected: []string{
+				"456 Elm St",
+				"Othertown",
+				"GB",
+			},
+		},
+		{
+			name: "Raw-only address fallback",
+			input: &MailAddress{
+				Raw: "PO Box 123\nSpringfield, IL 62704\nUSA",
+			},
+			expected: []string{
+				"PO Box 123\nSpringfield, IL 62704\nUSA",
+			},
+		},
+		{
+			name:     "Empty address returns nil",
+			input:    &MailAddress{},
+			expected: nil,
+		},
+		{
+			name:     "Nil address returns nil",
+			input:    nil,
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lines := tt.input.ToLines()
+
+			// Compare length first
+			if len(lines) != len(tt.expected) {
+				t.Errorf("expected %d lines, got %d", len(tt.expected), len(lines))
+				return
+			}
+
+			// Compare line content
+			for i := range lines {
+				if lines[i] != tt.expected[i] {
+					t.Errorf("line %d mismatch: expected '%s', got '%s'", i, tt.expected[i], lines[i])
+				}
+			}
+		})
+	}
+}

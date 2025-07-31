@@ -88,3 +88,21 @@ func (tmap TagMapString) ToArray() TagArrStrings {
 func (tmap TagMapString) IsEmpty() bool {
 	return tmap == nil || len(tmap) == 0
 }
+
+// Keys returns the list of tag keys in the map.
+func (tmap TagMapString) Keys() TagKeys {
+	keys := make(TagKeys, 0, len(tmap))
+	for k := range tmap {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// ToStringArr returns the tag keys as a slice of strings.
+func (tmap TagMapString) ToStringArr() []string {
+	strs := make([]string, 0, len(tmap))
+	for k := range tmap {
+		strs = append(strs, string(k))
+	}
+	return strs
+}

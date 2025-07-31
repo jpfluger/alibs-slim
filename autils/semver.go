@@ -34,30 +34,66 @@ func MustNewVersion(version string) semver.Version {
 	return *v
 }
 
+// MustNewVersionPtr creates a new semantic version from a string, panicking if the string is not a valid semver.
+func MustNewVersionPtr(version string) *semver.Version {
+	v, err := semver.NewVersion(version)
+	if err != nil {
+		panic(fmt.Sprintf("invalid version: %s", version)) // Panic instead of returning an empty version.
+	}
+	return v
+}
+
 // NewVersionFromString parses a semantic version from a string.
-// Returns nil if parsing fails and doReturnNilElseUninitialized is true, otherwise returns an uninitialized version.
+// Returns nil if parsing fails and doReturnNilElseUninitialized is true,
+// otherwise returns an uninitialized version (0.0.0).
 func NewVersionFromString(version string, doReturnNilElseUninitialized bool) *semver.Version {
 	v, err := semver.NewVersion(version)
 	if err != nil {
 		if doReturnNilElseUninitialized {
-			return nil // Return nil if the flag is set.
-		} else {
-			return &semver.Version{} // Return an uninitialized version otherwise.
+			return nil
 		}
+		return &semver.Version{}
 	}
 	return v
 }
 
 // IsSemverVersionInvalid checks if the provided semantic version is invalid.
+// Returns an error if version is nil, 0.0.0, or not greater than 0.0.0.
 func IsSemverVersionInvalid(version *semver.Version) error {
 	if version == nil {
 		return fmt.Errorf("version is nil")
 	}
-	if !version.GreaterThan(&semver.Version{}) {
-		return fmt.Errorf("version is empty")
-	}
 	if version.String() == "0.0.0" {
 		return fmt.Errorf("version cannot be 0.0.0")
 	}
+	if !version.GreaterThan(&semver.Version{}) {
+		return fmt.Errorf("version must be greater than 0.0.0")
+	}
 	return nil
+}
+
+// IsSemverValid returns true if all provided semantic versions are valid.
+func IsSemverValid(version ...*semver.Version) bool {
+	return AreSemverVersionsValid(version...) == nil
+}
+
+// AreSemverVersionsValid checks one or more semver.Version pointers for validity.
+// Returns the first error found, or nil if all are valid.
+func AreSemverVersionsValid(versions ...*semver.Version) error {
+	for i, version := range versions {
+		if err := IsSemverVersionInvalid(version); err != nil {
+			return fmt.Errorf("version at index %d (%v) is invalid: %w", i, version, err)
+		}
+	}
+	return nil
+}
+
+// HasAnyValidSemverVersion returns true if at least one provided version is valid.
+func HasAnyValidSemverVersion(versions ...*semver.Version) bool {
+	for _, version := range versions {
+		if IsSemverVersionInvalid(version) == nil {
+			return true
+		}
+	}
+	return false
 }

@@ -20,10 +20,11 @@ This is a default token but of course more secrets can be created for your purpo
 
 // SecretsKey constants define specific keys used for encryption and configuration.
 const (
-	SECRETSKEY_APPHOSTEK = SecretsKey("apphostek") // App Host Encryption Key
-	SECRETSKEY_SVT       = SecretsKey("svt")       // Secrets Vault Token
-	SECRETSKEY_SALT      = SecretsKey("salt")      // Salt value
-	SECRETSKEY_JWT       = SecretsKey("jwt")       // JWT signing key
+	SECRETSKEY_APPHOSTEK SecretsKey = "apphostek" // App Host Encryption Key
+	// Used for credential secrets and db passwords
+	SECRETSKEY_SVT  SecretsKey = "svt"  // Secrets Vault Token
+	SECRETSKEY_SALT SecretsKey = "salt" // Salt value
+	SECRETSKEY_JWT  SecretsKey = "jwt"  // JWT signing key
 )
 
 // SecretsKey is a type that represents a key used in secret management.

@@ -2,6 +2,13 @@ package acrypt
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
+	"github.com/stretchr/testify/assert"
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -118,4 +125,97 @@ func TestAESGCM256EncryptEmptyData(t *testing.T) {
 	if !bytes.Equal(decryptedText, plaintext) {
 		t.Errorf("Decrypted text does not match the original plaintext.\nGot: %s\nWant: %s", decryptedText, plaintext)
 	}
+}
+
+func TestAESCTR256EncryptDecrypt_SmallFile(t *testing.T) {
+	tmp := t.TempDir()
+	plainFile := filepath.Join(tmp, "plain.txt")
+	encFile := filepath.Join(tmp, "plain.txt.enc")
+	decFile := filepath.Join(tmp, "plain_decrypted.txt")
+	passphrase := "supersecret"
+
+	// Write small plain file.
+	content := []byte("Hello AES-CTR world! This is a small test file.")
+	assert.NoError(t, os.WriteFile(plainFile, content, 0644))
+
+	// Encrypt
+	assert.NoError(t, AESCTR256EncryptFile(plainFile, encFile, passphrase))
+	assert.FileExists(t, encFile)
+
+	// Decrypt
+	assert.NoError(t, AESCTR256DecryptFile(encFile, decFile, passphrase))
+	assert.FileExists(t, decFile)
+
+	// Check content matches original.
+	decrypted, err := os.ReadFile(decFile)
+	assert.NoError(t, err)
+	assert.Equal(t, content, decrypted)
+}
+
+func TestAESCTR256EncryptDecrypt_LargeFile(t *testing.T) {
+	tmp := t.TempDir()
+	plainFile := filepath.Join(tmp, "big.bin")
+	encFile := filepath.Join(tmp, "big.bin.enc")
+	decFile := filepath.Join(tmp, "big_decrypted.bin")
+	passphrase := "larger_secret"
+
+	// Generate ~20 MB random file.
+	out, err := os.Create(plainFile)
+	assert.NoError(t, err)
+	defer out.Close()
+
+	buf := make([]byte, 1024*1024)
+	for i := 0; i < 20; i++ {
+		_, err := rand.Read(buf)
+		assert.NoError(t, err)
+		_, err = out.Write(buf)
+		assert.NoError(t, err)
+	}
+
+	// Encrypt
+	assert.NoError(t, AESCTR256EncryptFile(plainFile, encFile, passphrase))
+	assert.FileExists(t, encFile)
+
+	// Decrypt
+	assert.NoError(t, AESCTR256DecryptFile(encFile, decFile, passphrase))
+	assert.FileExists(t, decFile)
+
+	// Compare file digests (not full bytes to save RAM)
+	origHash, err := fileSHA256(plainFile)
+	assert.NoError(t, err)
+
+	decHash, err := fileSHA256(decFile)
+	assert.NoError(t, err)
+
+	assert.Equal(t, origHash, decHash)
+}
+
+func TestAESCTR256Decrypt_WrongPassphrase(t *testing.T) {
+	tmp := t.TempDir()
+	plainFile := filepath.Join(tmp, "plain.txt")
+	encFile := filepath.Join(tmp, "plain.txt.enc")
+	decFile := filepath.Join(tmp, "plain_decrypted.txt")
+	passphrase := "correctpass"
+	badPassphrase := "wrongpass"
+
+	assert.NoError(t, os.WriteFile(plainFile, []byte("Sensitive stuff!"), 0644))
+	assert.NoError(t, AESCTR256EncryptFile(plainFile, encFile, passphrase))
+
+	// Decrypt with wrong passphrase should fail HMAC check.
+	err := AESCTR256DecryptFile(encFile, decFile, badPassphrase)
+	assert.ErrorContains(t, err, "HMAC does not match")
+}
+
+func fileSHA256(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }

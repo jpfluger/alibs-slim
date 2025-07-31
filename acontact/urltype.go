@@ -19,6 +19,7 @@ const (
 	URLTYPE_BLOG         = UrlType("blog")         // Personal or professional blog URL
 	URLTYPE_PORTFOLIO    = UrlType("portfolio")    // Portfolio URL for showcasing work
 	URLTYPE_COMPANY      = UrlType("company")      // Company or organization's main
+	URLTYPE_LEGAL        = UrlType("legal")        // Legal or compliance documents (e.g. ToS, privacy)
 )
 
 // IsEmpty checks if the UrlType is empty after trimming spaces

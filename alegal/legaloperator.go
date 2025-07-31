@@ -3,35 +3,54 @@ package alegal
 import (
 	"fmt"
 	"github.com/jpfluger/alibs-slim/acontact"
+	"strings"
 )
 
 // LegalOperator represents an operator in a legal context and embeds acontact.Company.
 type LegalOperator struct {
 	acontact.ContactCore // Embedding acontact.Entity to inherit its methods and properties.
+	isValid              bool
+}
+
+func (lo *LegalOperator) IsValid() bool {
+	return lo != nil && lo.isValid
 }
 
 // Validate the LegalOperator's required fields.
 func (lo *LegalOperator) Validate() error {
-	// Check if the LegalOperator is nil.
 	if lo == nil {
 		return fmt.Errorf("legal operator is nil")
 	}
 
-	// Check if the LegalOperator has a business URL.
+	// Check required name
+	name := strings.TrimSpace(lo.GetName())
+	if name == "" {
+		return fmt.Errorf("legal operator name is empty")
+	}
+
+	// Check required business URL
 	if !lo.Urls.HasType(acontact.URLTYPE_BUSINESS) {
-		return fmt.Errorf("no url for 'business'")
+		return fmt.Errorf("legal operator missing 'business' URL")
+	}
+	business := lo.Urls.FindByType(acontact.URLTYPE_BUSINESS)
+	if business.Link == nil || !business.Link.IsUrl() {
+		return fmt.Errorf("business URL is missing or invalid")
 	}
 
-	// Check if the LegalOperator has a name set.
-	if lo.GetName() == "" {
-		return fmt.Errorf("name is empty")
+	// Optionally validate 'legal' URL if present
+	if lo.Urls.HasType(acontact.URLTYPE_LEGAL) {
+		legal := lo.Urls.FindByType(acontact.URLTYPE_LEGAL)
+		if legal.Link == nil || !legal.Link.IsUrl() {
+			return fmt.Errorf("legal URL is present but invalid")
+		}
 	}
 
-	// If all checks pass, return nil indicating successful initialization.
+	lo.isValid = true
 	return nil
 }
 
 var appLegalOperator *LegalOperator
+var appLegalOperatorView *LegalOperatorView
 
 func LEGALOPERATOR() *LegalOperator {
 	return appLegalOperator
@@ -42,4 +61,9 @@ func SetLegalOperator(legalOperator *LegalOperator) {
 		panic("appLegalOperator already initialized")
 	}
 	appLegalOperator = legalOperator
+	appLegalOperatorView = NewLegalOperatorView(legalOperator)
+}
+
+func GetLegalOperatorView() *LegalOperatorView {
+	return appLegalOperatorView
 }

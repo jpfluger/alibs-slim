@@ -31,6 +31,7 @@ func DEPLOYMENTTYPE() DeploymentType {
 type AppVersion struct {
 	Name      string          `json:"name,omitempty"`      // The name of the application.
 	Version   *semver.Version `json:"version,omitempty"`   // The semantic version of the application.
+	Title     string          `json:"title,omitempty"`     // The title of the application.
 	About     string          `json:"about,omitempty"`     // Additional information about the application.
 	Owner     string          `json:"owner,omitempty"`     // The owner of the application.
 	LegalMark string          `json:"legalMark,omitempty"` // Legal trademark or copyright notice.
@@ -62,6 +63,11 @@ const (
 	APPVERSION_FORMAT_BUILD          AppVersionFormat = "build"       // default
 )
 
+// IsEmpty checks if the AppVersionFormat is empty after trimming whitespace.
+func (bt AppVersionFormat) IsEmpty() bool {
+	return strings.TrimSpace(string(bt)) == ""
+}
+
 // Format returns the version information in the specified format.
 func (a *AppVersion) Format(format AppVersionFormat) (string, error) {
 	switch format {
@@ -81,7 +87,7 @@ func (a *AppVersion) Format(format AppVersionFormat) (string, error) {
 		return a.About, nil
 	case APPVERSION_FORMAT_BUILD:
 		return fmt.Sprintf("%s@%s,%s-%s", a.BuildName.String(), a.Version.String(), a.BuildType.String(), a.DeploymentType.String()), nil
-	default:
+	default: // APPVERSION_FORMAT_APP_AT_VERSION
 		return fmt.Sprintf("%s@%s", a.BuildName.String(), a.Version.String()), nil
 	}
 }
@@ -122,6 +128,22 @@ func (a *AppVersion) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (a *AppVersion) GetTitle() string {
+	return a.Title
+}
+
+func (a *AppVersion) GetLongTitle() string {
+	if a.BuildType.IsEmpty() && a.DeploymentType.IsEmpty() {
+		return fmt.Sprintf("%s v%s", a.Title, a.Version.String())
+	}
+	return fmt.Sprintf("%s v%s, %s-%s",
+		a.Title,
+		a.Version.String(),
+		a.BuildType.String(),
+		a.DeploymentType.String(),
+	)
 }
 
 func (a *AppVersion) SetBuildName(newBuildName string) {

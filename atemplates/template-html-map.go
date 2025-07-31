@@ -92,7 +92,9 @@ func GetHTMLTemplateFunctions(fmapType TemplateFunctions) *htemplate.FuncMap {
 			"Dict": Dict,
 
 			// Array
-			"JoinString": JoinString,
+			"JoinString":          JoinString,
+			"ArrayContains":       ArrayContains,
+			"ArrayContainsString": ArrayContainsString,
 
 			// HTML-specific functions to ensure safe rendering.
 			"SafeURL":               SafeURL,
@@ -394,4 +396,30 @@ func JoinString(items []string, sep string) string {
 		return ""
 	}
 	return strings.Join(items, sep)
+}
+
+// ArrayContains checks if an array of interface{} contains the target value.
+func ArrayContains(arr []interface{}, target interface{}) bool {
+	if arr == nil || len(arr) == 0 {
+		return false
+	}
+	for _, v := range arr {
+		if v == target {
+			return true
+		}
+	}
+	return false
+}
+
+// ArrayContainsString checks if an array of string contains the target value.
+func ArrayContainsString(arr []string, target string) bool {
+	if arr == nil || len(arr) == 0 {
+		return false
+	}
+	for _, v := range arr {
+		if v == target {
+			return true
+		}
+	}
+	return false
 }

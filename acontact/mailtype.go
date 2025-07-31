@@ -17,6 +17,7 @@ const (
 	MAILTYPE_SHIPPING  MailType = "shipping"  // Shipping mailing address
 	MAILTYPE_POBOX     MailType = "pobox"     // Post office box mailing address
 	MAILTYPE_ALTERNATE MailType = "alternate" // Alternate mailing address
+	MAILTYPE_LEGAL     MailType = "legal"     // Legal mailing address
 )
 
 // IsEmpty checks if the MailType is empty after trimming spaces.

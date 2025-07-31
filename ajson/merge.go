@@ -4,10 +4,12 @@ import (
 	"dario.cat/mergo"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/hjson/hjson-go/v4"
 	"github.com/jpfluger/alibs-slim/autils"
 	"os"
 	"regexp"
+	"strings"
 )
 
 // MergeOptions defines how the JSON configs should be processed.
@@ -102,4 +104,87 @@ func MergeConfigsSaveAs(saveFile string, opts MergeOptions) error {
 	}
 
 	return os.WriteFile(saveFile, data, autils.PATH_CHMOD_FILE)
+}
+
+// MergeFilesIntoWithSave merges multiple configuration files into the given target struct.
+// The resulting structure is marshaled into a formatted JSON string and returned.
+// If writeToFile is non-empty, the JSON will also be saved to the specified file path.
+//
+// Parameters:
+//   - files: list of configuration file paths (must be non-empty)
+//   - target: a pointer to the struct to unmarshal the merged config into
+//   - writeToFile: optional file path to write the final merged JSON output
+//
+// Returns:
+//   - A formatted JSON string of the merged config
+//   - An error if any step in the process fails (merge, marshal, or file write)
+func MergeFilesIntoWithSave(files []string, target interface{}, writeToFile string) (string, error) {
+	if files == nil || len(files) == 0 {
+		return "", fmt.Errorf("no files provided for merge")
+	}
+
+	mergeOpts := MergeOptions{
+		Files:         files,
+		UseHJSON:      false,
+		StripComments: true,
+	}
+
+	// Perform the merge into the target
+	if err := MergeConfigsInto(target, mergeOpts); err != nil {
+		return "", fmt.Errorf("failed to merge files into target: %w", err)
+	}
+
+	// Marshal the result to string
+	result, err := MarshalIndentToString(target)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal merged file: %w", err)
+	}
+
+	// Optionally write to file
+	if strings.TrimSpace(writeToFile) != "" {
+		if err = os.WriteFile(writeToFile, []byte(result), autils.PATH_CHMOD_FILE); err != nil {
+			return "", fmt.Errorf("failed to save merged file to %q: %w", writeToFile, err)
+		}
+	}
+
+	return result, nil
+}
+
+// MergeFilesIntoMap merges multiple configuration files into a single map[string]interface{}.
+// If writeToFile is non-empty, the merged map will also be saved as formatted JSON to the given file path.
+//
+// Parameters:
+//   - files: list of configuration file paths to merge
+//   - writeToFile: optional output file path for saving the merged config
+//
+// Returns:
+//   - The merged configuration as a map[string]interface{}
+//   - An error if any part of the process fails (e.g., merge or file write)
+func MergeFilesIntoMap(files []string, writeToFile string) (map[string]interface{}, error) {
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no config files provided for merge")
+	}
+
+	mergeOpts := MergeOptions{
+		Files:         files,
+		UseHJSON:      false,
+		StripComments: true,
+	}
+
+	merged, err := MergeConfigs(mergeOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge config files: %w", err)
+	}
+
+	if strings.TrimSpace(writeToFile) != "" {
+		data, err := json.MarshalIndent(merged, "", "  ")
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal merged config: %w", err)
+		}
+		if err := os.WriteFile(writeToFile, data, autils.PATH_CHMOD_FILE); err != nil {
+			return nil, fmt.Errorf("failed to save merged config to file %q: %w", writeToFile, err)
+		}
+	}
+
+	return merged, nil
 }

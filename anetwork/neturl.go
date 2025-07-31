@@ -113,6 +113,15 @@ func (nu *NetURL) NewUrlJoinPath(elem ...string) (string, error) {
 	return newURL.String(), nil
 }
 
+// MustJoin joins the given path elements to the existing URL and returns the new URL as a string.
+func (nu *NetURL) MustJoin(elem ...string) string {
+	newURL, err := nu.NewUrlJoinPath(elem...)
+	if err != nil {
+		return ""
+	}
+	return newURL
+}
+
 // SplitHostPortWithDefaults splits the host and port, applying default ports based on the scheme if necessary.
 func (nu *NetURL) SplitHostPortWithDefaults(applyPortByScheme bool) (host string, port string, err error) {
 	if nu.Port() == "" && applyPortByScheme {

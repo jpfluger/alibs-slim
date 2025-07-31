@@ -60,3 +60,19 @@ func TestTagMapString(t *testing.T) {
 		t.Fatalf("expected tagmap count of 0 but instead have %d", len(tm))
 	}
 }
+
+func TestTagMapString_KeysAndStrings(t *testing.T) {
+	tags := TagMapString{
+		"env":  "prod",
+		"role": "db",
+		"zone": "us-east-1",
+	}
+
+	keys := tags.Keys()
+	assert.Contains(t, keys, TagKey("env"))
+	assert.Contains(t, keys, TagKey("role"))
+
+	strs := tags.ToStringArr()
+	assert.Contains(t, strs, "env")
+	assert.Contains(t, strs, "zone")
+}

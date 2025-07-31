@@ -56,3 +56,5 @@ func (key TagKey) TrimSpace() TagKey {
 func (key TagKey) String() string {
 	return string(key)
 }
+
+type TagKeys []TagKey

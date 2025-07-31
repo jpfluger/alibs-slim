@@ -82,7 +82,7 @@ func (uc *UserCredential) MatchUsernamePasswordWithCaseSensitive(username auser.
 			return false
 		}
 	}
-	isValid, err := acrypt.IsEqualArgon2id(uc.Password, password)
+	isValid, err := acrypt.VerifyArgon2id(uc.Password, password)
 	if !isValid || err != nil {
 		return false
 	}
@@ -138,7 +138,7 @@ func (uc *UserCredential) EncryptPassword(secret string) error {
 	if acrypt.IsArgon2idHash(secret) {
 		return fmt.Errorf("secret already hashed")
 	}
-	hashedPassword, err := acrypt.EncryptArgon2id(secret, nil)
+	hashedPassword, err := acrypt.HashArgon2id(secret, nil)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt secret: %v", err)
 	}
@@ -152,7 +152,7 @@ func (uc *UserCredential) CheckPassword(secret string) (bool, error) {
 	uc.mu.RLock()
 	defer uc.mu.RUnlock()
 
-	isEqual, err := acrypt.IsEqualArgon2id(uc.Password, secret)
+	isEqual, err := acrypt.VerifyArgon2id(uc.Password, secret)
 	if err != nil {
 		return false, fmt.Errorf("failed to check secret: %v", err)
 	}

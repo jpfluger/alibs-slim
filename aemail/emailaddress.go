@@ -37,6 +37,11 @@ func (e EmailAddress) Domain() string {
 	return ""
 }
 
+// Matches determines if two emails are equal.
+func (e EmailAddress) Matches(target EmailAddress) bool {
+	return e.ToStringTrimLower() == target.ToStringTrimLower()
+}
+
 // String returns the string representation of the EmailAddress.
 func (e EmailAddress) String() string {
 	return string(e)
@@ -82,7 +87,7 @@ func (es EmailAddresses) HasValues() bool {
 // HasMatch checks if the EmailAddresses slice contains the specified EmailAddress.
 func (es EmailAddresses) HasMatch(tEmail EmailAddress) bool {
 	for _, e := range es {
-		if e == tEmail {
+		if e.Matches(tEmail) {
 			return true
 		}
 	}

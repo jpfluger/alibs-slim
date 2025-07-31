@@ -1,4 +1,0 @@
-{"level":"info","jobPlanId":"019760fc-e227-71ae-b568-554a92e49e21","time":"2025-06-11T16:54:35-05:00","message":"job started"}
-{"level":"info","jobPlanId":"019760fc-e227-71ae-b568-554a92e49e21","time":"2025-06-11T16:54:35-05:00","message":"shell command 1 of 1: begin"}
-{"level":"info","jobPlanId":"019760fc-e227-71ae-b568-554a92e49e21","time":"2025-06-11T16:54:35-05:00","message":"shell command 1 of 1: finish"}
-{"level":"info","jobPlanId":"019760fc-e227-71ae-b568-554a92e49e21","time":"2025-06-11T16:54:35-05:00","message":"job ended"}

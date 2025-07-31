@@ -18,6 +18,7 @@ const (
 	PHONETYPE_FAX      = PhoneType("fax")      // Fax number
 	PHONETYPE_OTHER    = PhoneType("other")    // Other types of phone numbers
 	PHONETYPE_PERSONAL = PhoneType("personal") // Personal phone number
+	PHONETYPE_LEGAL    = PhoneType("legal")    // Legal phone number
 )
 
 // IsEmpty checks if the PhoneType is empty after trimming spaces.

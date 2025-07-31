@@ -78,7 +78,9 @@ func GetTextTemplateFunctions(fmapType TemplateFunctions) *ttemplate.FuncMap {
 			"Dict": Dict,
 
 			// Array
-			"JoinString": JoinString,
+			"JoinString":          JoinString,
+			"ArrayContains":       ArrayContains,
+			"ArrayContainsString": ArrayContainsString,
 
 			// Formatting functions.
 			"FormatIntegerComma":                 FormatIntegerComma,

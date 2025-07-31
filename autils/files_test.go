@@ -313,3 +313,23 @@ func TestSanitizeName(t *testing.T) {
 		assert.Equal(t, tt.expected, result, "SanitizeName failed for input: %s", tt.input)
 	}
 }
+
+func Test_EvaluateMockRoot(t *testing.T) {
+	mockSrc := "./test_data/mock1"
+	mockDest := "./test_data/root_output_test_base"
+
+	// Clean dest dir if exists
+	_ = os.RemoveAll(mockDest)
+
+	// Clean up after test
+	defer func() {
+		_ = os.RemoveAll(mockDest)
+	}()
+
+	err := EvaluateMockRootDir(mockSrc, mockDest, false)
+	assert.NoError(t, err, "should copy mock dir to root")
+
+	// Ensure expected file is copied
+	_, err = ResolveFile(filepath.Join(mockDest, "config.json"))
+	assert.NoError(t, err, "config.json should exist in copied root")
+}

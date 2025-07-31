@@ -70,3 +70,29 @@ func StringArrContainsString(slice []string, item string) bool {
 	}
 	return false
 }
+
+// CleanStringMap removes entries with empty keys or values from the given map.
+// Trims all keys and values before checking.
+func CleanStringMap(m map[string]string) map[string]string {
+	cleaned := make(map[string]string)
+	for k, v := range m {
+		k = strings.TrimSpace(k)
+		v = strings.TrimSpace(v)
+		if k != "" && v != "" {
+			cleaned[k] = v
+		}
+	}
+	return cleaned
+}
+
+// CleanStringSlice removes empty or whitespace-only entries from the slice.
+// Each string is trimmed before checking.
+func CleanStringSlice(input []string) []string {
+	var cleaned []string
+	for _, val := range input {
+		if trimmed := strings.TrimSpace(val); trimmed != "" {
+			cleaned = append(cleaned, trimmed)
+		}
+	}
+	return cleaned
+}
