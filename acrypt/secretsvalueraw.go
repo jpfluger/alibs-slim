@@ -82,24 +82,16 @@ func (s SecretsValueRaw) Decode(password string) ([]byte, error) {
 	}
 
 	if mode == CRYPTMODE_ENCRYPTED {
-		var decrypted []byte
 		cipherText, err := base64.StdEncoding.DecodeString(value)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to base64-decode ciphertext: %w", err)
 		}
 
-		switch encryption {
-		case ENCRYPTIONTYPE_AES128:
-			decrypted, err = AESGCM128Decrypt(cipherText, password)
-		case ENCRYPTIONTYPE_AES256:
-			decrypted, err = AESGCM256Decrypt(cipherText, password)
-		default:
-			return nil, errors.New("unsupported encryption type")
-		}
-
+		decrypted, err := AESGCMDecrypt(cipherText, password, encryption)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decrypt value: %w", err)
 		}
+
 		value = string(decrypted)
 	}
 
@@ -107,12 +99,12 @@ func (s SecretsValueRaw) Decode(password string) ([]byte, error) {
 	if encoding == ENCODINGTYPE_BASE64 {
 		decoded, err = base64.StdEncoding.DecodeString(value)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to base64-decode value: %w", err)
 		}
 	} else if encoding == ENCODINGTYPE_HEX {
 		decoded, err = hex.DecodeString(value)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to hex-decode value: %w", err)
 		}
 	} else {
 		decoded = []byte(value)
@@ -121,30 +113,26 @@ func (s SecretsValueRaw) Decode(password string) ([]byte, error) {
 	return decoded, nil
 }
 
-// Encode changes the raw value to a new encrypted or plain value based on the current mode.
+// Encode sets the raw value to a new encoded and optionally encrypted format based on the mode.
 func (s *SecretsValueRaw) Encode(rawValue []byte, masterPassword string) error {
-	if rawValue == nil || len(rawValue) == 0 {
+	if len(rawValue) == 0 {
 		return fmt.Errorf("rawValue cannot be empty")
 	}
 	if strings.TrimSpace(masterPassword) == "" {
 		return fmt.Errorf("masterPassword cannot be empty")
 	}
-
-	// Parse the existing value or use defaults if parsing fails.
+	// Parse existing or set defaults
 	mode, encoding, encryption, _, err := s.Parse()
-	if err != nil {
-		if mode.IsEmpty() {
-			mode = CRYPTMODE_ENCRYPTED
-		}
-		if encoding.IsEmpty() {
-			encoding = ENCODINGTYPE_BASE64
-		}
-		if encryption.IsEmpty() {
-			encryption = ENCRYPTIONTYPE_AES128
-		}
+	if err != nil || mode.IsEmpty() {
+		mode = CRYPTMODE_ENCRYPTED
 	}
-
-	// Encode the raw value based on the specified encoding type.
+	if encoding.IsEmpty() {
+		encoding = ENCODINGTYPE_BASE64
+	}
+	if encryption.IsEmpty() {
+		encryption = ENCRYPTIONTYPE_AES256 // Default to AES-256 for quantum resistance
+	}
+	// Encode rawValue
 	var encoded string
 	switch encoding {
 	case ENCODINGTYPE_BASE64:
@@ -156,35 +144,19 @@ func (s *SecretsValueRaw) Encode(rawValue []byte, masterPassword string) error {
 	default:
 		return fmt.Errorf("unsupported encoding type: %s", encoding)
 	}
-
-	// Handle encryption or plain formatting based on the mode.
+	// Handle mode
 	switch mode {
 	case CRYPTMODE_ENCRYPTED:
-		// Encrypt the encoded value using the specified encryption type.
-		var encryptedValue []byte
-		switch encryption {
-		case ENCRYPTIONTYPE_AES128:
-			encryptedValue, err = AESGCM128Encrypt([]byte(encoded), masterPassword)
-		case ENCRYPTIONTYPE_AES256:
-			encryptedValue, err = AESGCM256Encrypt([]byte(encoded), masterPassword)
-		default:
-			return fmt.Errorf("unsupported encryption type: %s", encryption)
-		}
+		encryptedValue, err := AESGCMEncrypt([]byte(encoded), masterPassword, encryption)
 		if err != nil {
 			return fmt.Errorf("failed to encrypt value: %w", err)
 		}
-
-		// Base64 encode the encrypted value and update the SecretsValueRaw.
 		encryptedEncodedValue := base64.StdEncoding.EncodeToString(encryptedValue)
 		*s = SecretsValueRaw(fmt.Sprintf("%s;%s;%s;%s", CRYPTMODE_ENCRYPTED, encoding, encryption, encryptedEncodedValue))
-
 	case CRYPTMODE_DECRYPTED:
-		// Store the plain encoded value without encryption.
 		*s = SecretsValueRaw(fmt.Sprintf("%s;%s;%s;%s", CRYPTMODE_DECRYPTED, encoding, encryption, encoded))
-
 	default:
 		return fmt.Errorf("invalid crypt mode: %s", mode)
 	}
-
 	return nil
 }

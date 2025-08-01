@@ -1,0 +1,5 @@
+{
+  "type": "release",
+  "types": ["release", "debug", "profile:debug"],
+  "invalid": "release@invalid"
+}

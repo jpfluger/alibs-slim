@@ -4,10 +4,16 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 )
+
+// Notes:
+// - SHA-256 and SHA-512 are FIPS 140-3 compliant hash algorithms (per FIPS 180-4).
+// - For FIPS mode in Go, build with GOEXPERIMENT=systemcrypto to use certified implementations.
+// - These functions are for data integrity/checksums, not password storage (use PBKDF2 for passwords).
 
 // FromStringToSHA256CheckSum generates a SHA-256 hash of the given string.
 func FromStringToSHA256CheckSum(target string) []byte {
@@ -41,13 +47,13 @@ func FormatSHA256ChecksumHex(checksum []byte) string {
 	return fmt.Sprintf("%x", checksum)
 }
 
-// FromStringToSHA512CheckSum generates a SHA-256 hash of the given string.
+// FromStringToSHA512CheckSum generates a SHA-512 hash of the given string.
 func FromStringToSHA512CheckSum(target string) []byte {
 	hash := sha512.Sum512([]byte(target))
 	return hash[:]
 }
 
-// FromBytesToSHA512Checksum generates a SHA-256 hash of the given bytes.
+// FromBytesToSHA512Checksum generates a SHA-512 hash of the given bytes.
 func FromBytesToSHA512Checksum(target []byte) []byte {
 	hashArray := sha512.Sum512(target)
 	return hashArray[:] // Convert the array to a slice
@@ -68,12 +74,12 @@ func FromFileToSHA512Checksum(filepath string) ([]byte, error) {
 	return hash.Sum(nil), nil
 }
 
-// ToCheckSumSHA256 generates a hex-encoded SHA-256 hash of the given target
+// ToCheckSumSHA256 generates a hex-encoded SHA-256 hash of the given target.
 func ToCheckSumSHA256(b []byte) string {
 	return fmt.Sprintf("%x", sha256.Sum256(b))
 }
 
-// ToCheckSumSHA512 generates a hex-encoded SHA-512 hash of the given target
+// ToCheckSumSHA512 generates a hex-encoded SHA-512 hash of the given target.
 func ToCheckSumSHA512(b []byte) string {
 	return fmt.Sprintf("%x", sha512.Sum512(b))
 }
@@ -149,4 +155,36 @@ func FromFileToSHA512ChecksumBase64(filepath string, prependFormat bool) (string
 // EncodeToBase64 encodes the given bytes to a base64-encoded string.
 func EncodeToBase64(b []byte) string {
 	return base64.RawStdEncoding.EncodeToString(b)
+}
+
+// Sum256ToSlice computes SHA-256 hash as a slice (helper for array-to-slice conversion).
+func Sum256ToSlice(b []byte) []byte {
+	hash := sha256.Sum256(b)
+	return hash[:]
+}
+
+// Sum512ToSlice computes SHA-512 hash as a slice (helper for array-to-slice conversion).
+func Sum512ToSlice(b []byte) []byte {
+	hash := sha512.Sum512(b)
+	return hash[:]
+}
+
+// ToHexSHA256 generates a hex-encoded SHA-256 hash (using helper).
+func ToHexSHA256(b []byte) string {
+	return hex.EncodeToString(Sum256ToSlice(b))
+}
+
+// ToHexSHA512 generates a hex-encoded SHA-512 hash (using helper).
+func ToHexSHA512(b []byte) string {
+	return hex.EncodeToString(Sum512ToSlice(b))
+}
+
+// ToBase64SHA256 generates a base64-encoded SHA-256 hash (using helper).
+func ToBase64SHA256(b []byte) string {
+	return base64.RawStdEncoding.EncodeToString(Sum256ToSlice(b))
+}
+
+// ToBase64SHA512 generates a base64-encoded SHA-512 hash (using helper).
+func ToBase64SHA512(b []byte) string {
+	return base64.RawStdEncoding.EncodeToString(Sum512ToSlice(b))
 }

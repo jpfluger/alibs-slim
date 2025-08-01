@@ -1,0 +1,8 @@
+{
+  "app": "myapp",
+  "version": "1.0", // Initial version
+  "settings": {
+    "port": 8080, /* Default port */
+    "debug": false
+  }
+}

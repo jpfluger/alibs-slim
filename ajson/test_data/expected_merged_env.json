@@ -1,13 +1,10 @@
 {
-  "app": {
-    "name": "myapp",
+  "app": "myapp",
+  "version": "1.1",
+  "env": "production",
+  "settings": {
     "port": 9090,
-    "env": "production"
-  },
-  "debug": false,
-  "features": {
-    "login": true,
-    "signup": true,
-    "billing": true
+    "debug": true,
+    "log": "info"
   }
 }

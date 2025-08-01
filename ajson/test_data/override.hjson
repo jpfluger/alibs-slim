@@ -1,9 +1,7 @@
 {
-  app: {
-    port: 8888
-  }
-  debug: false
-  features: {
-    login: true
+  version: "1.1"
+  settings: {
+    port: 9090
+    log: info
   }
 }

@@ -1,24 +1,24 @@
 {
   "services": {
     "web": {
-      "port": 3000,
-      "timeout": 30,
+      "port": 8080,
+      "timeout": 60,
+      "tags": ["v1"],
       "features": {
-        "caching": false,
+        "caching": true,
         "gzip": false
-      },
-      "tags": ["beta", "v1"]
+      }
     }
   },
   "global": {
     "logging": {
       "level": "info",
-      "enabled": true
+      "enabled": false
     },
-    "theme": null
+    "theme": "light"
   },
   "metadata": {
-    "version": "1.0",
-    "build": 1001
+    "version": "0.9",
+    "build": 1000
   }
 }

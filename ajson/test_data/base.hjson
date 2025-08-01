@@ -1,8 +1,11 @@
 {
-  // base config
-  app: {
-    name: "myapp"
-    port: 8000
+  app: myapp
+  version: 1.0
+  settings: {
+    port: 8080
+    debug: false
   }
-  debug: true
+  // This is an HJSON comment
+  /* Multi-line
+     comment */
 }

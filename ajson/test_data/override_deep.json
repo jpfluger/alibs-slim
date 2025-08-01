@@ -1,20 +1,19 @@
 {
   "services": {
     "web": {
-      "timeout": 60,
+      "port": 3000,
+      "tags": ["v2"],
       "features": {
-        "gzip": true
-      },
-      "tags": ["v2", "stable"]
+        "caching": false
+      }
     }
   },
   "global": {
     "logging": {
-      "level": "debug"
-    },
-    "theme": "dark"
+      "enabled": true
+    }
   },
   "metadata": {
-    "build": 1002
+    "version": "1.0"
   }
 }

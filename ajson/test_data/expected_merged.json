@@ -1,11 +1,9 @@
 {
-  "app": {
-    "name": "myapp",
-    "port": 9090
-  },
-  "debug": false,
-  "features": {
-    "login": true,
-    "signup": true
+  "app": "myapp",
+  "version": "1.1",
+  "settings": {
+    "port": 9090,
+    "debug": false,
+    "log": "info"
   }
 }

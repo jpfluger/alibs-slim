@@ -4,10 +4,11 @@ import (
 	"strings"
 )
 
-// BuildName is the name given to the binary when built.
+// BuildName represents the name given to a binary when built.
 type BuildName string
 
 // IsEmpty checks if the BuildName is empty after trimming whitespace.
+// Returns true if the string is empty or contains only whitespace.
 func (bn BuildName) IsEmpty() bool {
 	return strings.TrimSpace(string(bn)) == ""
 }

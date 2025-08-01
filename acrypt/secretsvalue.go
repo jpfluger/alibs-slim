@@ -50,7 +50,7 @@ func (s *SecretsValue) NewJWTSecretKey() error {
 	defer s.mu.Unlock()
 
 	// Generate a new ChaCha20 key.
-	secretKey, err := GenerateChaCha20Key()
+	secretKey, err := GenerateSecretKey()
 	if err != nil {
 		return fmt.Errorf("failed to generate new JWT secret key: %v", err)
 	}
@@ -126,61 +126,42 @@ func (s *SecretsValue) EnsureCryptMode(password string, targetMode CryptMode) er
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Parse the current mode, encoding, encryption type, and value.
-	// The rawValue is already encoded.
 	currentMode, encoding, encryption, rawValue, err := s.Value.Parse()
 	if err != nil {
 		return fmt.Errorf("failed to parse SecretsValue: %v", err)
 	}
 
-	// If the current mode matches the target mode, no changes are needed.
 	if currentMode == targetMode {
 		return nil
 	}
 
 	switch targetMode {
 	case CRYPTMODE_ENCRYPTED:
-		// Ensure the current mode is decrypted, so we can encrypt the value.
 		if currentMode != CRYPTMODE_DECRYPTED {
 			return errors.New("cannot encrypt: current mode is not decrypted")
 		}
 
-		// Encrypt the raw value using the specified encryption type.
-		var encryptedValue []byte
-		switch encryption {
-		case ENCRYPTIONTYPE_AES128:
-			encryptedValue, err = AESGCM128Encrypt([]byte(rawValue), password)
-		case ENCRYPTIONTYPE_AES256:
-			encryptedValue, err = AESGCM256Encrypt([]byte(rawValue), password)
-		default:
-			return errors.New("unsupported encryption type")
-		}
+		encryptedValue, err := AESGCMEncrypt([]byte(rawValue), password, encryption)
 		if err != nil {
-			return fmt.Errorf("failed to encrypt value: %v", err)
+			return fmt.Errorf("failed to encrypt value: %w", err)
 		}
 
-		// Always encode with the encrypted value in the specified encoding type.
 		encodedValue := base64.StdEncoding.EncodeToString(encryptedValue)
-
-		// Update the SecretsValue with the encrypted format.
 		s.Value = SecretsValueRaw(fmt.Sprintf("%s;%s;%s;%s", CRYPTMODE_ENCRYPTED, encoding, encryption, encodedValue))
-		s.valueDecoded = nil // Clear the decoded value since it has changed.
+		s.valueDecoded = nil
 
 	case CRYPTMODE_DECRYPTED:
-		// Ensure the current mode is encrypted, so we can decrypt the value.
 		if currentMode != CRYPTMODE_ENCRYPTED {
 			return errors.New("cannot decrypt: current mode is not encrypted")
 		}
 
-		// Decode and decrypt the value.
-		decodedValue, err := s.Value.Decode(password)
+		decodedValue, err := s.Value.Decode(password) // Assuming Decode uses AESGCMDecrypt internally with encryption type
 		if err != nil {
 			return fmt.Errorf("failed to decode and decrypt value: %v", err)
 		}
 
-		// Update the SecretsValue with the decrypted format.
 		s.Value = SecretsValueRaw(fmt.Sprintf("%s;%s;%s;%s", CRYPTMODE_DECRYPTED, encoding, encryption, string(decodedValue)))
-		s.valueDecoded = decodedValue // Cache the decoded value.
+		s.valueDecoded = decodedValue
 
 	default:
 		return errors.New("invalid target CryptMode")

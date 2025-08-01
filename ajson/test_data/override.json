@@ -1,10 +1,7 @@
 {
-  "app": {
-    "port": 9090
-  },
-  // Debug versus production
-  "debug": false,
-  "features": {
-    "signup": true
+  "version": "1.1",
+  "settings": {
+    "port": 9090,
+    "log": "info"
   }
 }

@@ -1,0 +1,5 @@
+{
+  "type": "dev",
+  "types": ["dev", "qa", "prod:demo"],
+  "invalid": "dev@invalid"
+}

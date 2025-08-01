@@ -3,11 +3,11 @@
     "web": {
       "port": 3000,
       "timeout": 120,
+      "tags": ["v2", "stable"],
       "features": {
         "caching": false,
         "gzip": true
-      },
-      "tags": ["v2", "stable"]
+      }
     }
   },
   "global": {

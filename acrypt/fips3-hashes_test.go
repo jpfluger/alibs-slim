@@ -4,16 +4,15 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
-	"encoding/hex"
-	"github.com/stretchr/testify/assert"
 	"github.com/jpfluger/alibs-slim/autils"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path"
 	"strings"
 	"testing"
 )
 
-func TestCreateHashSHA256(t *testing.T) {
+func TestFromStringToSHA256CheckSum(t *testing.T) {
 	key := "test-key"
 	expectedLength := 32 // SHA-256 hashes are 256 bits, i.e., 32 bytes.
 	hash := FromStringToSHA256CheckSum(key)
@@ -49,7 +48,6 @@ func TestFromFileToSHA256Checksum(t *testing.T) {
 
 	// Convert the checksum to a hexadecimal string.
 	actualChecksumHex := FormatSHA256ChecksumHex(checksum)
-	//actualChecksumHex := fmt.Sprintf("%x", checksum)
 
 	// Compare the actual checksum with the expected checksum.
 	if actualChecksumHex != expectedChecksumHex {
@@ -92,7 +90,7 @@ func TestPrependCryptFormatBase64(t *testing.T) {
 	}
 }
 
-func TestCreateHashSHA256Base64(t *testing.T) {
+func TestToHashSHA256Base64(t *testing.T) {
 	key := "test-key"
 	hash := ToHashSHA256Base64(key, true)
 	if !strings.HasPrefix(hash, "{sha256}") {
@@ -100,7 +98,7 @@ func TestCreateHashSHA256Base64(t *testing.T) {
 	}
 }
 
-func TestCreateHashSHA512Base64(t *testing.T) {
+func TestToHashSHA512Base64(t *testing.T) {
 	key := "test-key"
 	hash := ToHashSHA512Base64(key, true)
 	if !strings.HasPrefix(hash, "{sha512}") {
@@ -119,6 +117,7 @@ func initCryptFileTests(t *testing.T) (dir string, file1 string, err error) {
 		deleteDir(t, []string{dir})
 		t.Fatalf("cannot create test file; %v", err)
 	}
+
 	return dir, file1, nil
 }
 
@@ -145,41 +144,25 @@ func TestFromBytesToSHA256Checksum(t *testing.T) {
 	expectedChecksumSlice := expectedChecksumArray[:]
 
 	// Compare the checksums.
-	if len(actualChecksumSlice) != len(expectedChecksumSlice) {
-		t.Errorf("Checksum lengths do not match. Got: %d, Want: %d", len(actualChecksumSlice), len(expectedChecksumSlice))
-	}
-
-	for i := range expectedChecksumSlice {
-		if actualChecksumSlice[i] != expectedChecksumSlice[i] {
-			t.Errorf("Checksum bytes do not match at index %d. Got: %x, Want: %x", i, actualChecksumSlice[i], expectedChecksumSlice[i])
-		}
-	}
+	assert.Equal(t, expectedChecksumSlice, actualChecksumSlice)
 }
 
-// TestFromBytesToSHA512Checksum tests the FromBytesToSHA256Checksum function.
+// TestFromBytesToSHA512Checksum tests the FromBytesToSHA512Checksum function.
 func TestFromBytesToSHA512Checksum(t *testing.T) {
 	// Define a byte slice to hash.
 	data := []byte("hello world")
 
-	// Generate the SHA-256 checksum using the standard library for comparison.
+	// Generate the SHA-512 checksum using the standard library for comparison.
 	expectedChecksumArray := sha512.Sum512(data)
 
-	// Generate the SHA-256 checksum using our function.
+	// Generate the SHA-512 checksum using our function.
 	actualChecksumSlice := FromBytesToSHA512Checksum(data)
 
 	// Convert the expected checksum array to a slice for comparison.
 	expectedChecksumSlice := expectedChecksumArray[:]
 
 	// Compare the checksums.
-	if len(actualChecksumSlice) != len(expectedChecksumSlice) {
-		t.Errorf("Checksum lengths do not match. Got: %d, Want: %d", len(actualChecksumSlice), len(expectedChecksumSlice))
-	}
-
-	for i := range expectedChecksumSlice {
-		if actualChecksumSlice[i] != expectedChecksumSlice[i] {
-			t.Errorf("Checksum bytes do not match at index %d. Got: %x, Want: %x", i, actualChecksumSlice[i], expectedChecksumSlice[i])
-		}
-	}
+	assert.Equal(t, expectedChecksumSlice, actualChecksumSlice)
 }
 
 // TestFromFileToSHA256ChecksumBase64 tests the FromFileToSHA256ChecksumBase64 function.
@@ -250,10 +233,6 @@ func TestFromFileToSHA512ChecksumBase64(t *testing.T) {
 	}
 }
 
-func toByteArray(b [32]byte) []byte {
-	return b[:]
-}
-
 func TestToCheckSumSHA256(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -263,22 +242,22 @@ func TestToCheckSumSHA256(t *testing.T) {
 		{
 			name:      "Empty Input",
 			input:     []byte(""),
-			expectHex: hex.EncodeToString(toByteArray(sha256.Sum256([]byte{}))),
+			expectHex: ToHexSHA256([]byte("")),
 		},
 		{
 			name:      "Short String",
 			input:     []byte("hello"),
-			expectHex: hex.EncodeToString(toByteArray(sha256.Sum256([]byte("hello")))),
+			expectHex: ToHexSHA256([]byte("hello")),
 		},
 		{
 			name:      "Long String",
 			input:     []byte("The quick brown fox jumps over the lazy dog"),
-			expectHex: hex.EncodeToString(toByteArray(sha256.Sum256([]byte("The quick brown fox jumps over the lazy dog")))),
+			expectHex: ToHexSHA256([]byte("The quick brown fox jumps over the lazy dog")),
 		},
 		{
 			name:      "Binary Data",
 			input:     []byte{0x00, 0xFF, 0xAA, 0xBB, 0xCC},
-			expectHex: hex.EncodeToString(toByteArray(sha256.Sum256([]byte{0x00, 0xFF, 0xAA, 0xBB, 0xCC}))),
+			expectHex: ToHexSHA256([]byte{0x00, 0xFF, 0xAA, 0xBB, 0xCC}),
 		},
 	}
 
@@ -290,10 +269,6 @@ func TestToCheckSumSHA256(t *testing.T) {
 	}
 }
 
-func toByteArray512(b [64]byte) []byte {
-	return b[:]
-}
-
 func TestToCheckSumSHA512(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -303,22 +278,22 @@ func TestToCheckSumSHA512(t *testing.T) {
 		{
 			name:      "Empty Input",
 			input:     []byte(""),
-			expectHex: hex.EncodeToString(toByteArray512(sha512.Sum512([]byte{}))),
+			expectHex: ToHexSHA512([]byte("")),
 		},
 		{
 			name:      "Short String",
 			input:     []byte("hello"),
-			expectHex: hex.EncodeToString(toByteArray512(sha512.Sum512([]byte("hello")))),
+			expectHex: ToHexSHA512([]byte("hello")),
 		},
 		{
 			name:      "Long String",
 			input:     []byte("The quick brown fox jumps over the lazy dog"),
-			expectHex: hex.EncodeToString(toByteArray512(sha512.Sum512([]byte("The quick brown fox jumps over the lazy dog")))),
+			expectHex: ToHexSHA512([]byte("The quick brown fox jumps over the lazy dog")),
 		},
 		{
 			name:      "Binary Data",
 			input:     []byte{0x00, 0xFF, 0xAA, 0xBB, 0xCC},
-			expectHex: hex.EncodeToString(toByteArray512(sha512.Sum512([]byte{0x00, 0xFF, 0xAA, 0xBB, 0xCC}))),
+			expectHex: ToHexSHA512([]byte{0x00, 0xFF, 0xAA, 0xBB, 0xCC}),
 		},
 	}
 

@@ -3,22 +3,22 @@
     "web": {
       "port": 3000,
       "timeout": 60,
+      "tags": ["v2"],
       "features": {
         "caching": false,
-        "gzip": true
-      },
-      "tags": ["v2", "stable"]
+        "gzip": false
+      }
     }
   },
   "global": {
     "logging": {
-      "level": "debug",
+      "level": "info",
       "enabled": true
     },
-    "theme": "dark"
+    "theme": "light"
   },
   "metadata": {
     "version": "1.0",
-    "build": 1002
+    "build": 1000
   }
 }
