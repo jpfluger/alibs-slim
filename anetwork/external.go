@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	NETPORT_MIN = 1     // Minimum valid port number, 0 is reserved
-	NETPORT_MAX = 65534 // Maximum valid port number, 65535 is reserved
+	NETPORT_MIN       = 1     // Minimum valid port number, 0 is reserved
+	NETPORT_MAX       = 65534 // Maximum valid port number, 65535 is reserved
+	NETPORT_EPHEMERAL = 49152
 )
 
 // IsOutsidePortRange checks if a given port number is outside the valid range of 1 to 65535.

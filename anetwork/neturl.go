@@ -9,17 +9,71 @@ import (
 	"time"
 )
 
-// ParseNetURL parses a string into a NetURL object.
+// ParseNetURL parses and validates a URL with open-ended, authority-based schemes,
+// and normalizes file: URLs to their canonical forms.
+// Accepted:
+//   - file:///abs/path          (empty authority; absolute path required)
+//   - file://host/abs/path      (authority present; absolute path required)
+//   - Any other scheme WHEN written in //authority form (e.g., smb://host, rdp://host, arl://host)
+//
+// Rejected:
+//   - Opaque/no-authority forms (e.g., "mailto:", "ssh:host")
+//   - file:// (no path), file:/ (no path), file:/rel/path (not absolute)
 func ParseNetURL(target string) (*NetURL, error) {
-	parsedURL, err := url.Parse(target)
+	u, err := url.Parse(target)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse string to create NetURL: %v", err)
+		return nil, fmt.Errorf("could not parse string to create NetURL: %w", err)
 	}
-	// Perform additional validation to ensure the URL has at least a scheme and host.
-	if parsedURL.Scheme == "" || parsedURL.Host == "" {
-		return nil, fmt.Errorf("parsed URL is missing required components")
+	if u.Scheme == "" {
+		return nil, fmt.Errorf("parsed URL is missing scheme")
 	}
-	return &NetURL{URL: parsedURL}, nil
+
+	switch strings.ToLower(u.Scheme) {
+	case "file":
+		u, err = normalizeFileURL(u, target)
+		if err != nil {
+			return nil, err
+		}
+
+	default:
+		rest := strings.TrimPrefix(target, u.Scheme+":")
+		hasAuthority := strings.HasPrefix(rest, "//")
+		if !hasAuthority {
+			return nil, fmt.Errorf("%s URL must use //authority form (e.g., %s://host/...)", u.Scheme, u.Scheme)
+		}
+		if u.Host == "" {
+			return nil, fmt.Errorf("%s URL requires a host", u.Scheme)
+		}
+	}
+
+	return &NetURL{URL: u}, nil
+}
+
+func normalizeFileURL(u *url.URL, original string) (*url.URL, error) {
+	rest := strings.TrimPrefix(original, u.Scheme+":")
+	hasAuthority := strings.HasPrefix(rest, "//")
+
+	if !hasAuthority {
+		// Allow file:/abs but force file:///abs
+		if u.Path == "" || !strings.HasPrefix(u.Path, "/") || u.Path == "/" {
+			return nil, fmt.Errorf("file URL must be absolute and not just root (e.g. file:///path)")
+		}
+		return &url.URL{Scheme: "file", Path: u.Path}, nil
+	}
+
+	// Authority form
+	if u.Host == "" {
+		if u.Path == "" || !strings.HasPrefix(u.Path, "/") || u.Path == "/" {
+			return nil, fmt.Errorf("file URL without host must be absolute and not just root (file:///path)")
+		}
+		return &url.URL{Scheme: "file", Path: u.Path}, nil
+	}
+
+	// file://host/abs/path
+	if u.Path == "" || !strings.HasPrefix(u.Path, "/") || u.Path == "/" {
+		return nil, fmt.Errorf("file URL with host must have absolute non-root path like file://host/path")
+	}
+	return &url.URL{Scheme: "file", Host: u.Host, Path: u.Path}, nil
 }
 
 // MustParseNetURL attempts to parse a string into a NetURL object and returns an empty NetURL on error.
@@ -51,6 +105,14 @@ func GetUrlPathOrRoot(u *url.URL) string {
 // NetURL wraps the standard net/url URL type.
 type NetURL struct {
 	*url.URL
+}
+
+// String safely returns the string representation of the URL.
+func (nu *NetURL) String() string {
+	if nu == nil || nu.URL == nil {
+		return ""
+	}
+	return nu.URL.String()
 }
 
 // GetSchemeHost returns the scheme and host of the URL as a string.
@@ -132,14 +194,61 @@ func (nu *NetURL) SplitHostPortWithDefaults(applyPortByScheme bool) (host string
 	return
 }
 
-// IsHttps checks if the URL scheme is HTTPS.
-func (nu *NetURL) IsHttps() bool {
-	return nu.URL != nil && nu.URL.Scheme == "https"
+// IsEmpty checks if the NetURL is nil or represents an empty or whitespace-only URL string.
+func (nu *NetURL) IsEmpty() bool {
+	if nu.URL == nil {
+		return true
+	}
+	return strings.TrimSpace(nu.URL.String()) == ""
 }
 
-// IsUrl checks if the NetURL is a valid URL.
+// IsFile checks if the NetURL has a "file" scheme (case-insensitive) and a non-empty path.
+// Returns false if the URL is nil or the scheme is not "file".
+func (nu *NetURL) IsFile() bool {
+	if nu.URL == nil {
+		return false
+	}
+	return strings.EqualFold(nu.URL.Scheme, "file") && nu.URL.Path != "" && nu.URL.Path != "/"
+}
+
+// IsHttps checks if the NetURL has an "https" scheme (case-insensitive) and a non-empty host.
+// Returns false if the URL is nil or the scheme is not "https".
+func (nu *NetURL) IsHttps() bool {
+	if nu.URL == nil {
+		return false
+	}
+	return strings.EqualFold(nu.URL.Scheme, "https") && nu.URL.Host != ""
+}
+
+// IsHttpProtocol checks if the NetURL has a "http" or "https" scheme (case-insensitive) and a non-empty host.
+func (nu *NetURL) IsHttpProtocol() bool {
+	if nu.URL == nil {
+		return false
+	}
+	scheme := strings.ToLower(nu.URL.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return false
+	}
+	return nu.URL.Host != ""
+}
+
+// IsURL reports whether the NetURL is a supported, usable URL.
+// - file: requires non-empty, non-root absolute path
+// - everything else: requires non-empty host
 func (nu *NetURL) IsUrl() bool {
-	return nu != nil && nu.URL != nil && nu.URL.Scheme != "" && nu.URL.Host != ""
+	if nu == nil || nu.URL == nil {
+		return false
+	}
+	scheme := strings.ToLower(nu.URL.Scheme)
+	if scheme == "" {
+		return false
+	}
+	if scheme == "file" {
+		// Accept only absolute, non-root path for file URLs
+		return nu.URL.Path != "" && nu.URL.Path != "/"
+	}
+	// Authority-style network schemes: host required
+	return nu.URL.Host != ""
 }
 
 // GetPortForStartServer returns the port to start a server, including the domain if specified.
@@ -154,23 +263,16 @@ func (nu *NetURL) GetPortForStartServer(includeDomain bool) string {
 	return port
 }
 
-// GetPortNoDefaultHasColon returns the port with a colon prefix if set, otherwise an empty string.
-func (nu *NetURL) GetPortNoDefaultHasColon() string {
-	if nu.Port() != "" {
-		return ":" + nu.Port()
-	}
-	return ""
-}
-
-// String returns the string representation of the NetURL.
-func (nu *NetURL) String() string {
+// IsHostIP checks if the host is an IP address.
+func (nu *NetURL) IsHostIP() bool {
 	if nu == nil || nu.URL == nil {
-		return ""
+		return false
 	}
-	return nu.URL.String()
+	addr := net.ParseIP(nu.URL.Host)
+	return addr != nil
 }
 
-// IsHostIPAsString checks if the host is an IP address and returns it as a string.
+// IsHostIPAsString checks if the host is an IP address as a string.
 func (nu *NetURL) IsHostIPAsString() (string, bool) {
 	if nu == nil || nu.URL == nil {
 		return "", false
@@ -253,7 +355,7 @@ func (nu *NetURL) Copy() *NetURL {
 	if nu == nil {
 		return nil
 	}
-	newURL, _ := url.Parse(nu.URL.String())
+	newURL, _ := url.Parse(nu.String())
 	return &NetURL{URL: newURL}
 }
 
@@ -291,4 +393,147 @@ func (nu *NetURL) GetPortInt() (int, error) {
 	return portInt, nil
 }
 
+// FindNextOpenPort tries to bind sequentially starting at `port` until it
+// finds an available TCP port (supports dual-stack IPv4/IPv6).
+//
+// * port <= 0    → 49152 (first IANA-registered ephemeral port)
+// * returns the open port number or an error if none found.
+func FindNextOpenPort(port int) (int, error) {
+	if port < NETPORT_MIN || port > NETPORT_MAX {
+		port = NETPORT_EPHEMERAL
+	}
+
+	for p := port; p <= NETPORT_MAX; p++ {
+		addr := fmt.Sprintf(":%d", p)
+		ln, err := net.Listen("tcp", addr)
+		if err != nil {
+			// Port is in use – keep searching.
+			continue
+		}
+		_ = ln.Close() // Immediately free it.
+		return p, nil
+	}
+
+	return 0, fmt.Errorf("no open port found in range %d-%d", port, NETPORT_MAX)
+}
+
+// WithNextOpenPort clones the current NetURL, discovers the next open port
+// (starting at startPort) on the supplied host, and returns the updated copy
+// together with the chosen port.
+//
+// When startPort <= 0 the search starts at the first ephemeral port (49152).
+func (nu *NetURL) WithNextOpenPort(startPort int) (*NetURL, int, error) {
+	if nu == nil || !nu.IsUrl() {
+		return nil, 0, fmt.Errorf("nil or invalid NetURL")
+	}
+
+	openPort, err := FindNextOpenPort(startPort)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Leverage the existing helper to build a fresh NetURL with the new port.
+	return nu.ReplaceWithPort(openPort), openPort, nil
+}
+
+// isAcceptableWebHost accept only IPs, localhost, or hosts containing a dot.
+func isAcceptableWebHost(h string) bool {
+	if h == "" {
+		return false
+	}
+	if h == "localhost" {
+		return true
+	}
+	if net.ParseIP(h) != nil {
+		return true
+	}
+	return strings.Contains(h, ".")
+}
+
+// NormalizeURL adds https:// to schemeless web inputs and defers validation/normalization to ParseNetURL.
+// Non-web schemes (file:, smb:, rdp:, arl:, etc.) are returned unchanged.
+func NormalizeURL(u NetURL) NetURL {
+	if u.IsEmpty() {
+		return NetURL{}
+	}
+	orig := strings.TrimSpace(u.String())
+	if orig == "" {
+		return NetURL{}
+	}
+
+	scheme := strings.ToLower(u.Scheme)
+
+	switch scheme {
+	case "http", "https":
+		parsed, err := ParseNetURL(orig)
+		if err != nil {
+			return NetURL{}
+		}
+		// STRICT web host check (fixes the failing tests)
+		if !isAcceptableWebHost(parsed.Hostname()) {
+			return NetURL{}
+		}
+		return *parsed
+
+	case "":
+		// Build https://<domain><path> from schemeless input
+		domain := strings.TrimPrefix(strings.TrimSpace(u.Host), "//")
+		path := u.Path
+		rawQuery := u.RawQuery
+		fragment := u.Fragment
+
+		if domain == "" {
+			full := strings.TrimSpace(u.Path)
+			if full == "" {
+				return NetURL{}
+			}
+			parts := strings.SplitN(full, "/", 2)
+			domain = parts[0]
+			if len(parts) > 1 {
+				path = "/" + parts[1]
+			} else {
+				path = ""
+			}
+		}
+		if domain == "" {
+			return NetURL{}
+		}
+
+		b := &url.URL{
+			Scheme:   "https",
+			Host:     domain,
+			Path:     path,
+			RawQuery: rawQuery,
+			Fragment: fragment,
+		}
+		parsed, err := ParseNetURL(b.String())
+		if err != nil {
+			return NetURL{}
+		}
+		// STRICT web host check (fixes the failing tests)
+		if !isAcceptableWebHost(parsed.Hostname()) {
+			return NetURL{}
+		}
+		return *parsed
+
+	default:
+		// Non-web scheme: leave unchanged (ParseNetURL handles its own validation/normalization)
+		return u
+	}
+}
+
 type NetURLs []NetURL
+
+func (nus NetURLs) Clean(enforceHTTPs bool) NetURLs {
+	arr := NetURLs{}
+	for _, nu := range nus {
+		if nu.IsEmpty() {
+			continue
+		}
+		if enforceHTTPs && !nu.IsHttps() {
+			continue
+		}
+		arr = append(arr, nu)
+	}
+	return arr
+}

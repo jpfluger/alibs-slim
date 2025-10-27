@@ -1,0 +1,10 @@
+{
+  "name": "EmbeddedApp",
+  "version": "4.5.6",
+  "about": "A test embedded application",
+  "owner": "Test Owner",
+  "legalMark": "© 2023 Test Corp",
+  "buildName": "embeddedapp",
+  "buildType": "debug",
+  "deploymentType": "dev"
+}

@@ -1,8 +1,9 @@
 package atemplates
 
 import (
-	"github.com/jpfluger/alibs-slim/alog"
 	"sync"
+
+	"github.com/jpfluger/alibs-slim/alog"
 )
 
 // TemplateFunctions is an enumeration of available template function sets.
@@ -14,6 +15,7 @@ const (
 )
 
 // Manage is a struct that holds instances of template managers for different types of templates.
+// Deprecated
 type Manage struct {
 	PagesText    *TPagesText    // Manager for text page templates.
 	PagesHTML    *TPagesHTML    // Manager for HTML page templates.
@@ -28,6 +30,7 @@ var (
 )
 
 // TEMPLATES provides safe access to the singleton instance of Manage.
+// Deprecated
 func TEMPLATES() *Manage {
 	mu.RLock()
 	defer mu.RUnlock()
@@ -35,6 +38,7 @@ func TEMPLATES() *Manage {
 }
 
 // SetTemplates safely sets the singleton instance of Manage.
+// Deprecated
 func SetTemplates(tm *Manage) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -70,6 +74,7 @@ func (tm *Manage) RenderSnippetsText(name string, data interface{}) (string, err
 }
 
 // MustSnippetRenderHTML renders an HTML snippet template and returns an empty string on error.
+// Deprecated
 func MustSnippetRenderHTML(name string, data interface{}) string {
 	s, err := TEMPLATES().RenderSnippetsHTML(name, data)
 	if err != nil {
@@ -80,6 +85,7 @@ func MustSnippetRenderHTML(name string, data interface{}) string {
 }
 
 // MustSnippetRenderText renders a text snippet template and returns an empty string on error.
+// Deprecated
 func MustSnippetRenderText(name string, data interface{}) string {
 	s, err := TEMPLATES().RenderSnippetsText(name, data)
 	if err != nil {

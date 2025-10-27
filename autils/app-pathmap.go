@@ -50,6 +50,20 @@ func (apm *AppPathMap) Validate() error {
 	return nil
 }
 
+// ValidateDir only checks those keys identified as a directory exist.
+// It returns an error if any path does not exist or cannot be resolved.
+func (apm *AppPathMap) ValidateDir() error {
+	for key, val := range *apm {
+		if key.IsDir() {
+			// Assume ResolveDirectory is a function that checks the existence of a directory.
+			if _, err := ResolveDirectory(val); err != nil {
+				return fmt.Errorf("failed to validate existence of directory %s; %v", key.String(), err)
+			}
+		}
+	}
+	return nil
+}
+
 // ValidateWithOption validates the existence of paths in the AppPathMap.
 // If dirRoot is an empty string, it attempts to retrieve it from the AppPathMap using DIR_ROOT.
 // Relative paths are resolved using dirRoot before checking existence.

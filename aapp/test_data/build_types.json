@@ -1,5 +1,5 @@
 {
-  "type": "release",
-  "types": ["release", "debug", "profile:debug"],
-  "invalid": "release@invalid"
+  "single_build_type": "release",
+  "build_types_slice": ["release", "debug", "profile:debug"],
+  "invalid_build_type": "invalid"
 }

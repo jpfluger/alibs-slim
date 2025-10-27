@@ -2,11 +2,13 @@ package ahttp
 
 import (
 	"fmt"
-	"github.com/jpfluger/alibs-slim/anetwork"
-	"github.com/jpfluger/alibs-slim/autils"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
+
+	"github.com/jpfluger/alibs-slim/anetwork"
+	"github.com/jpfluger/alibs-slim/autils"
 )
 
 // ServiceUrl holds configuration details for a service, including its port, public URL,
@@ -16,6 +18,10 @@ type ServiceUrl struct {
 	PublicUrl  string `json:"publicUrl"`  // Public URL for the service.
 	CertFile   string `json:"certFile"`   // Path to the TLS certificate file (required if using HTTPS).
 	KeyFile    string `json:"keyFile"`    // Path to the TLS key file (required if using HTTPS).
+
+	// CertStorage is an optional edge-case scenario where its expected
+	// the certs are embedded into the ServiceUrl.
+	CertStorage *anetwork.CertStorage `json:"certStorage"`
 
 	u        *url.URL // Parsed URL object for internal use.
 	isTLS    bool     // Indicates if the service uses HTTPS (TLS).
@@ -39,7 +45,7 @@ func (su *ServiceUrl) GetIsTLS() bool {
 // Validate checks the ServiceUrl configuration for errors, including:
 // - Valid listen port within the range [1, 65535]
 // - Properly formatted PublicUrl
-// - TLS file requirements if using HTTPS.
+// - TLS file or storage requirements if using HTTPS.
 // Returns an error if validation fails, or nil if successful.
 func (su *ServiceUrl) Validate() error {
 	if su == nil {
@@ -70,8 +76,16 @@ func (su *ServiceUrl) Validate() error {
 	// Check if the service URL scheme indicates HTTPS.
 	su.isTLS = strings.HasPrefix(su.u.String(), "https://")
 
-	// If HTTPS is used, validate existence of certificate and key files.
+	// If HTTPS is used, validate certificate and key (files or storage).
 	if su.isTLS {
+		if su.CertStorage != nil {
+			if _, err = su.CertStorage.ToTLSCertificate(); err != nil {
+				return fmt.Errorf("invalid cert storage: %v", err)
+			}
+			// CertStorage is valid, so skip file checks.
+			return nil
+		}
+		// Only check files if CertStorage is not used.
 		su.CertFile = strings.TrimSpace(su.CertFile)
 		su.KeyFile = strings.TrimSpace(su.KeyFile)
 		if su.dirRoot != "" {
@@ -118,4 +132,130 @@ func (su *ServiceUrl) GetKeyFile() string {
 		return su.keyFile
 	}
 	return su.KeyFile
+}
+
+// ServiceUrlOpts defines options for creating a new ServiceUrl.
+type ServiceUrlOpts struct {
+	Default        *ServiceUrl
+	FreePortSearch int
+	RequireCerts   bool
+	SSOpts         *anetwork.SelfSignCertOpts // If RequireCerts is true and SSOpts is nil, use QNAP/Synology-like defaults.
+	DirCerts       string                     // If set, save certs to files in this dir; otherwise, use CertStorage if enabled.
+	UseCertStorage bool                       // If true, load certs into memory (CertStorage).
+}
+
+// NewServiceUrl creates a new ServiceUrl based on the provided options.
+func NewServiceUrl(opts *ServiceUrlOpts) (*ServiceUrl, error) {
+	if opts == nil {
+		opts = &ServiceUrlOpts{
+			Default:        nil,
+			FreePortSearch: 0,
+			RequireCerts:   true,
+			SSOpts: &anetwork.SelfSignCertOpts{
+				AutoDetectIPs:   true,
+				IncludeLoopback: true,
+				IncludeLocalSAN: true,
+				IncludeIPv4:     true,
+			},
+			UseCertStorage: true, // Default to in-memory for security.
+		}
+	}
+
+	var su *ServiceUrl
+	if opts.Default != nil {
+		su = opts.Default
+		if err := su.Validate(); err != nil {
+			return nil, err
+		}
+	} else {
+		su = &ServiceUrl{
+			ListenPort: 0, // Will be set below.
+			PublicUrl:  "",
+		}
+	}
+
+	// Handle port: Use FreePortSearch to find a free port if set.
+	if opts.FreePortSearch > 0 {
+		port, err := anetwork.FindNextOpenPort(opts.FreePortSearch)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find free port: %v", err)
+		}
+		su.ListenPort = port
+	} else if su.ListenPort == 0 {
+		// Fallback default port based on cert requirement.
+		if opts.RequireCerts {
+			su.ListenPort = 443
+		} else {
+			su.ListenPort = 80
+		}
+	}
+
+	// Set PublicUrl if not provided.
+	if su.PublicUrl == "" {
+		scheme := "http"
+		if opts.RequireCerts {
+			scheme = "https"
+		}
+		su.PublicUrl = fmt.Sprintf("%s://localhost:%d", scheme, su.ListenPort)
+	}
+
+	// Handle certs if required and not already set.
+	if opts.RequireCerts && (su.CertFile == "" && su.KeyFile == "" && su.CertStorage == nil) {
+		// Use provided SSOpts or fallback to defaults.
+		ssOpts := opts.SSOpts
+		if ssOpts == nil {
+			// QNAP/Synology-like defaults: local SAN, loopback, IPv4.
+			ssOpts = &anetwork.SelfSignCertOpts{
+				AutoDetectIPs:   true,
+				IncludeLoopback: true,
+				IncludeLocalSAN: true,
+				IncludeIPv4:     true,
+			}
+		}
+
+		// Generate self-signed cert.
+		tlsCert, err := anetwork.GenerateSelfSignedCertificate(*ssOpts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate self-signed cert: %v", err)
+		}
+
+		if opts.DirCerts != "" {
+			// Save to files if DirCerts is set.
+			if _, err := autils.ResolveDirectory(opts.DirCerts); err != nil {
+				return nil, fmt.Errorf("invalid cert directory: %v", err)
+			}
+			certPath := filepath.Join(opts.DirCerts, "selfsigned-cert.pem")
+			keyPath := filepath.Join(opts.DirCerts, "selfsigned-key.pem")
+			if err := anetwork.SaveCertificateToFile(tlsCert, certPath, keyPath); err != nil {
+				return nil, fmt.Errorf("failed to save cert files: %v", err)
+			}
+			su.CertFile = certPath
+			su.KeyFile = keyPath
+		}
+
+		if opts.UseCertStorage {
+			// Load into CertStorage.
+			certStorage, err := anetwork.NewCertStorage(tlsCert)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load cert into storage: %v", err)
+			}
+			su.CertStorage = certStorage
+		}
+	}
+
+	// New check: If UseCertStorage is true but CertStorage is nil, load from files if available.
+	if opts.UseCertStorage && su.CertStorage == nil && su.CertFile != "" && su.KeyFile != "" {
+		certStorage, err := anetwork.NewCertStorageByFile(su.CertFile, su.KeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load cert from files into storage: %v", err)
+		}
+		su.CertStorage = certStorage
+	}
+
+	// Final validation.
+	if err := su.Validate(); err != nil {
+		return nil, err
+	}
+
+	return su, nil
 }

@@ -5,16 +5,7 @@ import (
 	"html/template"
 	"strings"
 	"testing"
-
-	"github.com/labstack/echo/v4"
 )
-
-// mockEchoContext creates a mock Echo context for testing purposes.
-func mockEchoContext() echo.Context {
-	e := echo.New()
-	req := e.NewContext(nil, nil).Request()
-	return e.NewContext(req, nil)
-}
 
 // TestTPagesText_Render tests the Render method of TPagesText.
 func TestTPagesText_Render(t *testing.T) {
@@ -24,7 +15,7 @@ func TestTPagesText_Render(t *testing.T) {
 		// For example, a function to uppercase strings:
 		"upper": strings.ToUpper,
 	}
-	dir := "test_files/"
+	dir := "test_data/"
 
 	// This must be set to true even if "loadFile" is false, so
 	// that a reference to the file is created inside TSnippetsText.
@@ -91,7 +82,7 @@ func TestTPagesText_RenderPage(t *testing.T) {
 		// For example, a function to uppercase strings:
 		"upper": strings.ToUpper,
 	}
-	dir := "test_files/"
+	dir := "test_data/"
 
 	// This must be set to true even if "loadFile" is false, so
 	// that a reference to the file is created inside TSnippetsText.

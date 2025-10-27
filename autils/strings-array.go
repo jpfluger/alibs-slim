@@ -96,3 +96,16 @@ func CleanStringSlice(input []string) []string {
 	}
 	return cleaned
 }
+
+// CleanStringSliceToLower removes empty or whitespace-only entries from the slice,
+// trims any space, and ensures characters are lower-case.
+// Each string is trimmed before checking.
+func CleanStringSliceToLower(input []string) []string {
+	var cleaned []string
+	for _, val := range input {
+		if trimmed := ToStringTrimLower(val); trimmed != "" {
+			cleaned = append(cleaned, trimmed)
+		}
+	}
+	return cleaned
+}

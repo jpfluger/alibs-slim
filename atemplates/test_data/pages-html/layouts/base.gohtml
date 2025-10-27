@@ -4,24 +4,24 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{{.Title}}</title>
+        <title>{{block "title" .}}{{.Title}}{{end}}</title>
         <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
     <header>
-        <h1>{{/*.Header*/}}</h1>
+        {{block "header" .}}
+            <h1>Default Header</h1>
+        {{end}}
     </header>
-    <nav>
-        {{/*range .MenuItems*/}}
-            <a href="{{/*.Link*/}}">{{/*.Text*/}}</a>
-        {{/*end*/}}
-    </nav>
     <main>
-        <h2>{{/*.MainHeading*/}}</h2>
-        <p>{{/*.Content*/}}</p>
+        {{block "content" .}}
+            <p>Default Content</p>
+        {{end}}
     </main>
     <footer>
-        <p>{{/*.Footer*/}}</p>
+        {{block "footer" .}}
+            <p>Default Footer</p>
+        {{end}}
     </footer>
     </body>
     </html>

@@ -4,6 +4,8 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -33,52 +35,65 @@ func (avf AppVersionFormat) IsEmpty() bool {
 
 // AppVersion represents the version information of an application.
 type AppVersion struct {
-	Name           string          `json:"name,omitempty"`           // The name of the application.
-	Version        *semver.Version `json:"version,omitempty"`        // The semantic version of the application.
-	Title          string          `json:"title,omitempty"`          // The title of the application.
-	About          string          `json:"about,omitempty"`          // Additional information about the application.
-	Owner          string          `json:"owner,omitempty"`          // The owner of the application.
-	LegalMark      string          `json:"legalMark,omitempty"`      // Legal trademark or copyright notice.
-	BuildName      BuildName       `json:"buildName,omitempty"`      // The name of the built binary, defaults to trimmed/lowercase Name if empty.
-	BuildType      BuildType       `json:"buildType,omitempty"`      // The build type, defaults to BUILDTYPE_DEBUG if empty.
-	DeploymentType DeploymentType  `json:"deploymentType,omitempty"` // The deployment type, defaults to DEPLOYMENTTYPE_DEV if empty.
+	Name           string         `json:"name,omitempty"`           // The name of the application.
+	Version        semver.Version `json:"version,omitempty"`        // The semantic version of the application.
+	About          string         `json:"about,omitempty"`          // Additional information about the application.
+	Owner          string         `json:"owner,omitempty"`          // The owner of the application.
+	LegalMark      string         `json:"legalMark,omitempty"`      // Legal trademark or copyright notice.
+	BuildName      BuildName      `json:"buildName,omitempty"`      // The name of the built binary, defaults to trimmed/lowercase Name if empty.
+	BuildType      BuildType      `json:"buildType,omitempty"`      // The build type, defaults to BUILDTYPE_DEBUG if empty.
+	DeploymentType DeploymentType `json:"deploymentType,omitempty"` // The deployment type, defaults to DEPLOYMENTTYPE_DEV if empty.
 }
 
 // globalAppVersion holds the global AppVersion instance and related state.
 type globalAppVersion struct {
-	mu             sync.RWMutex
-	instance       *AppVersion
-	buildName      BuildName
-	buildType      BuildType
-	deploymentType DeploymentType
+	mu       sync.RWMutex
+	instance *AppVersion
 }
 
 var global = &globalAppVersion{}
 
-// BUILDNAME returns the global BuildName value, typically set by the compiler.
+var (
+	// Plain string vars for build-time injection via -X
+	buildNameStr           string = ""
+	buildTypeStr           string = ""
+	buildDeploymentTypeStr string = ""
+
+	// Your typed vars (keep these for type safety in the code)
+	buildName           BuildName      = ""
+	buildType           BuildType      = ""
+	buildDeploymentType DeploymentType = ""
+)
+
+func init() {
+	// Assign the injected strings to the typed vars at runtime
+	buildName = BuildName(buildNameStr)
+	buildType = BuildType(buildTypeStr)
+	buildDeploymentType = DeploymentType(buildDeploymentTypeStr)
+}
+
+// osExecutable is a variable for os.Executable to allow mocking in tests.
+var osExecutable = os.Executable
+
+// BUILDNAME returns the buildName BuildName value, typically set by the compiler.
 func BUILDNAME() BuildName {
-	global.mu.RLock()
-	defer global.mu.RUnlock()
-	return global.buildName
+	return buildName
 }
 
-// BUILDTYPE returns the global BuildType value, typically set by the compiler.
+// BUILDTYPE returns the buildType BuildType value, typically set by the compiler.
 func BUILDTYPE() BuildType {
-	global.mu.RLock()
-	defer global.mu.RUnlock()
-	return global.buildType
+	return buildType
 }
 
-// DEPLOYMENTTYPE returns the global DeploymentType value, typically set by the compiler.
-func DEPLOYMENTTYPE() DeploymentType {
-	global.mu.RLock()
-	defer global.mu.RUnlock()
-	return global.deploymentType
+// BUILDDEPLOYMENTTYPE returns the buildDeploymentType DeploymentType value, typically set by the compiler.
+func BUILDDEPLOYMENTTYPE() DeploymentType {
+	return buildDeploymentType
 }
 
 // Format returns the version information in the specified format.
 // Returns an error if marshaling fails for JSON format or if version is nil for certain formats.
 func (a *AppVersion) Format(format AppVersionFormat) (string, error) {
+	isVersionValid := autils.IsSemverValid(&a.Version)
 	switch format {
 	case APPVERSIONFORMAT_JSON:
 		data, err := json.MarshalIndent(a, "", "  ")
@@ -87,12 +102,12 @@ func (a *AppVersion) Format(format AppVersionFormat) (string, error) {
 		}
 		return string(data), nil
 	case APPVERSIONFORMAT_VERSION_ONLY:
-		if a.Version == nil {
+		if !isVersionValid {
 			return "", fmt.Errorf("version cannot be nil")
 		}
 		return fmt.Sprintf("v%s", a.Version.String()), nil
 	case APPVERSIONFORMAT_NO_V:
-		if a.Version == nil {
+		if !isVersionValid {
 			return "", fmt.Errorf("version cannot be nil")
 		}
 		return a.Version.String(), nil
@@ -101,12 +116,12 @@ func (a *AppVersion) Format(format AppVersionFormat) (string, error) {
 	case APPVERSIONFORMAT_ABOUT_ONLY:
 		return a.About, nil
 	case APPVERSIONFORMAT_BUILD:
-		if a.Version == nil {
+		if !isVersionValid {
 			return "", fmt.Errorf("version cannot be nil")
 		}
 		return fmt.Sprintf("%s@%s,%s-%s", a.BuildName.String(), a.Version.String(), a.BuildType.String(), a.DeploymentType.String()), nil
 	default: // APPVERSIONFORMAT_APP_AT_VERSION
-		if a.Version == nil {
+		if !isVersionValid {
 			return "", fmt.Errorf("version cannot be nil")
 		}
 		return fmt.Sprintf("%s@%s", a.BuildName.String(), a.Version.String()), nil
@@ -125,12 +140,19 @@ func (a *AppVersion) Validate() error {
 	if a.LegalMark == "" {
 		return fmt.Errorf("legal mark cannot be empty")
 	}
-	if a.Version == nil || a.Version.String() == "" {
+	if !autils.IsSemverValid(&a.Version) {
 		return fmt.Errorf("version cannot be nil or empty")
 	}
 	if a.BuildName.IsEmpty() {
 		if BUILDNAME().IsEmpty() {
-			a.BuildName = BuildName(autils.ToStringTrimLower(a.Name))
+			if exePath, err := osExecutable(); err == nil {
+				a.BuildName = BuildName(filepath.Base(exePath))
+			}
+			if a.BuildName.IsEmpty() {
+				trimmedLower := autils.ToStringTrimLower(a.Name)
+				noSpaces := strings.ReplaceAll(trimmedLower, " ", "")
+				a.BuildName = BuildName(noSpaces)
+			}
 		} else {
 			a.BuildName = BUILDNAME()
 		}
@@ -145,10 +167,10 @@ func (a *AppVersion) Validate() error {
 		return fmt.Errorf("invalid build type %q", a.BuildType)
 	}
 	if a.DeploymentType.IsEmpty() {
-		if DEPLOYMENTTYPE().IsEmpty() {
+		if BUILDDEPLOYMENTTYPE().IsEmpty() {
 			a.DeploymentType = DEPLOYMENTTYPE_DEV
 		} else {
-			a.DeploymentType = DEPLOYMENTTYPE()
+			a.DeploymentType = BUILDDEPLOYMENTTYPE()
 		}
 	} else if !a.DeploymentType.IsValid() {
 		return fmt.Errorf("invalid deployment type %q", a.DeploymentType)
@@ -158,55 +180,16 @@ func (a *AppVersion) Validate() error {
 
 // GetTitle returns the title of the application.
 func (a *AppVersion) GetTitle() string {
-	return a.Title
-}
-
-// GetLongTitle returns a detailed title including version, build type, and deployment type.
-func (a *AppVersion) GetLongTitle() string {
 	if a.BuildType.IsEmpty() && a.DeploymentType.IsEmpty() {
-		if a.Version == nil {
-			return a.Title
+		if !autils.IsSemverValid(&a.Version) {
+			return a.Name
 		}
-		return fmt.Sprintf("%s v%s", a.Title, a.Version.String())
+		return fmt.Sprintf("%s v%s", a.Name, a.Version.String())
 	}
-	if a.Version == nil {
-		return fmt.Sprintf("%s, %s-%s", a.Title, a.BuildType.String(), a.DeploymentType.String())
+	if !autils.IsSemverValid(&a.Version) {
+		return fmt.Sprintf("%s, %s-%s", a.Name, a.BuildType.String(), a.DeploymentType.String())
 	}
-	return fmt.Sprintf("%s v%s, %s-%s", a.Title, a.Version.String(), a.BuildType.String(), a.DeploymentType.String())
-}
-
-// SetBuildName sets the global build name and updates the AppVersion instance.
-func (a *AppVersion) SetBuildName(newBuildName BuildName) {
-	global.mu.Lock()
-	defer global.mu.Unlock()
-	global.buildName = newBuildName
-	a.BuildName = newBuildName
-}
-
-// SetBuildType sets the global build type and updates the AppVersion instance.
-// Returns an error if the build type is invalid.
-func (a *AppVersion) SetBuildType(newBuildType BuildType) error {
-	if !newBuildType.IsValid() {
-		return fmt.Errorf("invalid build type %q", newBuildType)
-	}
-	global.mu.Lock()
-	defer global.mu.Unlock()
-	global.buildType = newBuildType
-	a.BuildType = newBuildType
-	return nil
-}
-
-// SetDeploymentType sets the global deployment type and updates the AppVersion instance.
-// Returns an error if the deployment type is invalid.
-func (a *AppVersion) SetDeploymentType(newDeploymentType DeploymentType) error {
-	if !newDeploymentType.IsValid() {
-		return fmt.Errorf("invalid deployment type %q", newDeploymentType)
-	}
-	global.mu.Lock()
-	defer global.mu.Unlock()
-	global.deploymentType = newDeploymentType
-	a.DeploymentType = newDeploymentType
-	return nil
+	return fmt.Sprintf("%s v%s, %s-%s", a.Name, a.Version.String(), a.BuildType.String(), a.DeploymentType.String())
 }
 
 // GetBuildName returns the build name of the application.
@@ -222,6 +205,25 @@ func (a *AppVersion) GetBuildType() BuildType {
 // GetDeploymentType returns the deployment type of the application.
 func (a *AppVersion) GetDeploymentType() DeploymentType {
 	return a.DeploymentType
+}
+
+// Clone returns a deep copy of the AppVersion instance.
+// If the original Version is nil, the clone's Version will also be nil.
+func (a *AppVersion) Clone() *AppVersion {
+	if a == nil {
+		return nil
+	}
+	clone := &AppVersion{
+		Name:           a.Name,
+		Version:        a.Version,
+		About:          a.About,
+		Owner:          a.Owner,
+		LegalMark:      a.LegalMark,
+		BuildName:      a.BuildName,
+		BuildType:      a.BuildType,
+		DeploymentType: a.DeploymentType,
+	}
+	return clone
 }
 
 // LoadAppVersionFromBytes loads an AppVersion from a JSON byte slice.
@@ -245,9 +247,6 @@ func LoadAppVersionFromBytes(b []byte) (*AppVersion, error) {
 	return &appVersion, nil
 }
 
-// LoadEmbeddedAppVersion loads an AppVersion from an embedded JSON file.
-// Defaults to "app/version.json" if path is empty.
-// Returns an error if the file cannot be read or is invalid.
 // LoadEmbeddedAppVersion loads an AppVersion from an embedded JSON file.
 // Defaults to "app/version.json" if path is empty.
 // Returns an error if the file cannot be read or is invalid.
@@ -277,7 +276,7 @@ func LoadEmbeddedAppVersion(fs embed.FS, myPath string) (*AppVersion, error) {
 
 // GetAppVersion returns the global AppVersion instance.
 // Returns an error if not initialized.
-func GetAppVersion() (*AppVersion, error) {
+var GetAppVersion = func() (*AppVersion, error) {
 	global.mu.RLock()
 	defer global.mu.RUnlock()
 	if global.instance == nil {
@@ -286,12 +285,24 @@ func GetAppVersion() (*AppVersion, error) {
 	return global.instance, nil
 }
 
-// MustAppVersion returns the global AppVersion instance.
-func MustAppVersion() *semver.Version {
+// CloneAppVersion returns a clone of the global AppVersion instance.
+// Returns nil if the global instance is not initialized or its Version is nil.
+func CloneAppVersion() *AppVersion {
 	global.mu.RLock()
 	defer global.mu.RUnlock()
-	if global.instance == nil || global.instance.Version == nil {
-		return &semver.Version{}
+	if global.instance == nil || !autils.IsSemverValid(&global.instance.Version) {
+		return nil
+	}
+	return global.instance.Clone()
+}
+
+// MustVersion returns the semantic version from the global AppVersion instance.
+// Returns an empty semver.Version if not initialized or invalid.
+func MustVersion() semver.Version {
+	global.mu.RLock()
+	defer global.mu.RUnlock()
+	if global.instance == nil || !autils.IsSemverValid(&global.instance.Version) {
+		return semver.Version{}
 	}
 	return global.instance.Version
 }
@@ -313,7 +324,7 @@ func SetAppVersion(appVersion *AppVersion) error {
 
 // SetAppVersionByFS sets the global AppVersion instance from an embedded JSON file.
 // Returns an error if the file cannot be read or is invalid.
-func SetAppVersionByFS(fs embed.FS, myPath string) error {
+var SetAppVersionByFS = func(fs embed.FS, myPath string) error {
 	appVersion, err := LoadEmbeddedAppVersion(fs, myPath)
 	if err != nil {
 		return err
@@ -327,7 +338,4 @@ func ResetAppVersion() {
 	global.mu.Lock()
 	defer global.mu.Unlock()
 	global.instance = nil
-	global.buildName = ""
-	global.buildType = ""
-	global.deploymentType = ""
 }

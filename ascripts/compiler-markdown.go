@@ -3,13 +3,14 @@ package ascripts
 import (
 	"bytes"
 	"fmt"
+	htemplate "html/template"
+	"strings"
+
 	"github.com/jpfluger/alibs-slim/atemplates"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
-	htemplate "html/template"
-	"strings"
 )
 
 // CompilerMarkdown is a struct that holds an HTML template.
@@ -38,6 +39,7 @@ func (c *CompilerMarkdown) Render(body string, params ...interface{}) (string, e
 			),
 			goldmark.WithRendererOptions(
 				html.WithHardWraps(), // Use hard wraps.
+				html.WithUnsafe(),    // Added for unsafe HTML: Enables raw HTML rendering.
 				// html.WithXHTML(), // Uncomment to enable XHTML output.
 			),
 		)

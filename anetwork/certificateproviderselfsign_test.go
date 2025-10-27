@@ -1,9 +1,10 @@
 package anetwork
 
 import (
-	"github.com/jpfluger/alibs-slim/autils"
 	"path/filepath"
 	"testing"
+
+	"github.com/jpfluger/alibs-slim/autils"
 )
 
 func TestCertificateProviderSelfSign_Validate(t *testing.T) {
@@ -50,7 +51,7 @@ func TestCertificateProviderSelfSign_Validate(t *testing.T) {
 
 func TestGenerateSelfSignedCertificate(t *testing.T) {
 	domains := []string{"example.com", "*.example.com"}
-	cert, err := GenerateSelfSignedCertificate(domains)
+	cert, err := GenerateSelfSignedCertificate(SelfSignCertOpts{Domains: domains})
 	if err != nil {
 		t.Fatalf("GenerateSelfSignedCertificate() error = %v", err)
 	}

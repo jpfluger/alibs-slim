@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/pem"
 	"fmt"
 	"hash"
@@ -243,4 +244,44 @@ func AsymmetricVerify(pub interface{}, data, sig []byte, sigType SigningType) (b
 	default:
 		return false, fmt.Errorf("unsupported signing type")
 	}
+}
+
+// ComputeSigningCertFingerprint computes the SHA-256 fingerprint of a PEM-encoded certificate.
+// Input: PEM string (e.g., from CertChain[0]).
+// Output: Lowercase hex string (64 chars).
+// Errors if PEM invalid or not a cert.
+func ComputeSigningCertFingerprint(certPEM string) (string, error) {
+	return SHA256FingerprintHex(certPEM)
+}
+
+// SHA256FingerprintHex computes the SHA-256 fingerprint of a PEM-encoded certificate.
+// Input: PEM string (e.g., from CertChain[0]).
+// Output: Lowercase hex string (64 chars).
+// Errors if PEM invalid or not a cert.
+func SHA256FingerprintHex(certPEM string) (string, error) {
+	block, _ := pem.Decode([]byte(certPEM))
+	if block == nil || block.Type != "CERTIFICATE" {
+		return "", fmt.Errorf("invalid PEM: not a CERTIFICATE block")
+	}
+
+	// Parse to get DER bytes (though block.Bytes is already DER)
+	return ComputeSigningCertFingerprintDER(block.Bytes)
+}
+
+// ComputeSigningCertFingerprintDER computes the SHA-256 fingerprint of a PEM-encoded certificate passed in DER bytes.
+// Input: DER bytes (e.g., from x509.ParseCertificate).
+// Output: Lowercase hex string (64 chars).
+// Errors if PEM invalid or not a cert.
+func ComputeSigningCertFingerprintDER(certDER []byte) (string, error) {
+	if len(certDER) == 0 {
+		return "", fmt.Errorf("empty DER bytes")
+	}
+	// Parse to get DER bytes (though block.Bytes is already DER)
+	_, err := x509.ParseCertificate(certDER)
+	if err != nil {
+		return "", fmt.Errorf("invalid certificate: %w", err)
+	}
+
+	h := sha256.Sum256(certDER)
+	return hex.EncodeToString(h[:]), nil
 }

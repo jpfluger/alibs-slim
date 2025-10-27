@@ -4,9 +4,18 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/hex"
 	"encoding/pem"
+	"math/big"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerateECDSAKey(t *testing.T) {
@@ -333,4 +342,67 @@ func TestNewHasher(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestComputeSigningCertFingerprint(t *testing.T) {
+	// Generate a valid self-signed certificate for testing
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	assert.NoError(t, err, "failed to generate test key")
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "Test Cert"},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+	}
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	assert.NoError(t, err, "failed to create test cert")
+
+	// Encode to PEM
+	validPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes}))
+
+	// Compute expected fingerprint (SHA-256 of DER)
+	h := sha256.Sum256(derBytes)
+	expectedFingerprint := hex.EncodeToString(h[:])
+
+	t.Run("Valid PEM Cert", func(t *testing.T) {
+		fingerprint, err := ComputeSigningCertFingerprint(validPEM)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedFingerprint, fingerprint)
+	})
+
+	t.Run("Invalid PEM Not Cert Block", func(t *testing.T) {
+		invalidPEM := `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+-----END PUBLIC KEY-----`
+		_, err := ComputeSigningCertFingerprint(invalidPEM)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "not a CERTIFICATE block")
+	})
+
+	t.Run("Empty Input", func(t *testing.T) {
+		_, err := ComputeSigningCertFingerprint("")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid PEM")
+	})
+
+	t.Run("Malformed Cert DER", func(t *testing.T) {
+		malformedPEM := `-----BEGIN CERTIFICATE-----
+invalidderbytes
+-----END CERTIFICATE-----`
+		_, err := ComputeSigningCertFingerprint(malformedPEM)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid PEM") // Updated to match actual error
+	})
+
+	// Subtest for invalid DER with valid PEM structure
+	t.Run("Invalid Cert DER Valid PEM", func(t *testing.T) {
+		// Minimal valid DER structure that's malformed for X.509 (e.g., bad sequence)
+		badDER := []byte{0x30, 0x03, 0x00, 0x00, 0x00} // Invalid ASN.1
+		malformedPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: badDER}))
+		_, err := ComputeSigningCertFingerprint(malformedPEM)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid certificate")
+	})
 }

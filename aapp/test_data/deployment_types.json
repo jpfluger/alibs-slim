@@ -1,5 +1,5 @@
 {
-  "type": "dev",
-  "types": ["dev", "qa", "prod:demo"],
-  "invalid": "dev@invalid"
+  "single_deployment_type": "prod",
+  "deployment_types_slice": ["dev", "prod", "staging"],
+  "invalid_deployment_type": "invalid"
 }

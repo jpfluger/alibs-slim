@@ -1,8 +1,9 @@
 package anetwork
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDomainRFC_IsEmpty(t *testing.T) {
@@ -125,4 +126,52 @@ func TestDomainRFCs_FilterInvalidWithErrors(t *testing.T) {
 	assert.EqualError(t, invalid[DomainRFC("192.168.1.1")], "IP addresses are not allowed unless explicitly permitted")
 	assert.EqualError(t, invalid[DomainRFC("invalid_domain")], "single-label domains not allowed")
 	assert.EqualError(t, invalid[DomainRFC("bad.****.example.com")], "invalid DNS name format")
+}
+
+func TestDomainRFC_GetSlugReverse(t *testing.T) {
+	tests := []struct {
+		name     string
+		domain   DomainRFC
+		expected string
+	}{
+		{
+			name:     "Empty string",
+			domain:   DomainRFC(""),
+			expected: "",
+		},
+		{
+			name:     "Only whitespace",
+			domain:   DomainRFC("   "),
+			expected: "",
+		},
+		{
+			name:     "Single part domain",
+			domain:   DomainRFC("gov"),
+			expected: "gov",
+		},
+		{
+			name:     "Multi-part domain",
+			domain:   DomainRFC("hipaa.usa.gov"),
+			expected: "gov/usa/hipaa",
+		},
+		{
+			name:     "Domain with leading/trailing spaces",
+			domain:   DomainRFC(" hipaa.usa.gov "),
+			expected: "gov/usa/hipaa",
+		},
+		{
+			name:     "Domain with extra dots",
+			domain:   DomainRFC("example..com"),
+			expected: "com//example", // Handles empty parts as-is
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.domain.GetSlugReverse()
+			if got != tt.expected {
+				t.Errorf("GetSlugReverse() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
 }

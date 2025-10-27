@@ -1,8 +1,9 @@
 package anetwork
 
 import (
-	"golang.org/x/net/idna"
 	"strings"
+
+	"golang.org/x/net/idna"
 )
 
 // DomainRFC represents a domain string with extended validation and helper methods.
@@ -49,6 +50,22 @@ func (d DomainRFC) Normalize() (DomainRFC, error) {
 		return "", err
 	}
 	return DomainRFC(strings.TrimSpace(strings.ToLower(asciiDomain))), nil
+}
+
+// GetSlugReverse generates a slug by reversing the domain parts and joining with "/".
+// For example, "hipaa.usa.gov" becomes "gov/usa/hipaa".
+// Returns an empty string if the domain is empty.
+func (d DomainRFC) GetSlugReverse() string {
+	cleaned := strings.TrimSpace(string(d))
+	if cleaned == "" {
+		return ""
+	}
+	parts := strings.Split(cleaned, ".")
+	// Reverse the parts slice
+	for i, j := 0, len(parts)-1; i < j; i, j = i+1, j-1 {
+		parts[i], parts[j] = parts[j], parts[i]
+	}
+	return strings.Join(parts, "/")
 }
 
 // DomainRFCs represents a slice of DomainRFC.

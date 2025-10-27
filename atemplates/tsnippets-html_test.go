@@ -14,7 +14,7 @@ func TestRenderSnippetHTML(t *testing.T) {
 		// For example, a function to uppercase strings:
 		"upper": strings.ToUpper,
 	}
-	dir := "test_files/"
+	dir := "test_data/"
 
 	// This must be set to true even if "loadFile" is false, so
 	// that a reference to the file is created inside TSnippetsHTML.

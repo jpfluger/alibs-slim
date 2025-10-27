@@ -161,3 +161,17 @@ func UnmarshalRawMessage(raw json.RawMessage, target interface{}) error {
 	}
 	return nil
 }
+
+// MarshalToMap serializes an arbitrary Go value to JSON and then
+// deserializes it into a generic map[string]interface{}.
+func MarshalToMap(data interface{}) (map[string]interface{}, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("marshal data: %w", err)
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal(b, &m); err != nil {
+		return nil, fmt.Errorf("unmarshal data: %w", err)
+	}
+	return m, nil
+}

@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"syscall"
 )
@@ -25,6 +26,7 @@ const (
 	PATH_CHMOD_DIR_SECRETS     os.FileMode = 0700 // Secrets: owner only
 	PATH_CHMOD_FILE_SECRETS    os.FileMode = 0600 // Secret files
 	PATH_CHMOD_DIR_OWNER_GROUP os.FileMode = 0750 // Owner rwx, group rx
+	PATH_CHMOD_PATH_RO         os.FileMode = 0444 // Read-only access for any path
 )
 
 // SetProcessUmask sets the process-wide file mode creation mask (umask).
@@ -355,6 +357,31 @@ func SanitizeName(name string) string {
 	return sanitizedName
 }
 
+// CopyFile copies a file from src to dst, setting permissions to PATH_CHMOD_FILE.
+func CopyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open source file: %w", err)
+	}
+	defer in.Close()
+
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, PATH_CHMOD_FILE)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file: %w", err)
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		return fmt.Errorf("failed to copy file contents: %w", err)
+	}
+
+	if err := out.Sync(); err != nil {
+		return fmt.Errorf("failed to sync destination file: %w", err)
+	}
+
+	return nil
+}
+
 // MoveFileWithPerm copies a file from srcPath to destPath with the specified permissions, then deletes the srcPath.
 func MoveFileWithPerm(srcPath, destPath string, doOverwrite bool, fileMode os.FileMode, includeNonRegularFiles bool) error {
 	if err := CopyFileWithPerm(srcPath, destPath, doOverwrite, fileMode, includeNonRegularFiles); err != nil {
@@ -414,12 +441,30 @@ func CopyFileWithPerm(srcPath, destPath string, doOverwrite bool, fileMode os.Fi
 	return nil
 }
 
-// CopyDir recursively copies a directory tree, attempting to preserve permissions.
-func CopyDir(src, dst string) error {
+// CopyDirOpts holds options for CopyDir.
+type CopyDirOpts struct {
+	IgnoreIfDestExists bool   // If true, skip copy if dest exists
+	Timestamp          string // Optional timestamp suffix for dest (e.g., "20060102-150405"); empty means no suffix
+	// Future options: e.g., PreserveTimes bool, Exclude []string
+}
+
+// CopyDir recursively copies a directory tree, preserving permissions.
+// Use opts to customize (e.g., ignore existing dest or add timestamp for backups).
+func CopyDir(src, dst string, opts ...CopyDirOpts) error {
+	var opt CopyDirOpts
+	if len(opts) > 0 {
+		opt = opts[0] // Use first opts; extend for merging if needed
+	}
+
 	src = filepath.Clean(src)
 	dst = filepath.Clean(dst)
 
-	// Check if source directory exists.
+	// Append timestamp if provided (for unique backups)
+	if opt.Timestamp != "" {
+		dst = fmt.Sprintf("%s-%s", dst, opt.Timestamp)
+	}
+
+	// Check source
 	si, err := os.Stat(src)
 	if err != nil {
 		return err
@@ -428,45 +473,45 @@ func CopyDir(src, dst string) error {
 		return errors.New("source is not a directory")
 	}
 
-	// Check if destination directory exists.
+	// Handle destination
 	if Exists(dst) {
-		return errors.New("destination already exists")
+		if opt.IgnoreIfDestExists {
+			return nil // Skip copy
+		}
+		// Proceed to merge contents if not ignoring
+	} else {
+		if err := os.MkdirAll(dst, si.Mode()); err != nil {
+			return err
+		}
 	}
 
-	// Create destination directory.
-	if err := os.MkdirAll(dst, si.Mode()); err != nil {
-		return err
-	}
-
-	// Read entries from source directory.
+	// Read source entries
 	entries, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}
 
-	// Copy each entry.
+	// Copy each entry
 	for _, entry := range entries {
 		srcPath := filepath.Join(src, entry.Name())
 		dstPath := filepath.Join(dst, entry.Name())
 
 		if entry.IsDir() {
-			// Recursively copy subdirectories.
-			if err := CopyDir(srcPath, dstPath); err != nil {
+			// Recurse for subdirs with same opts
+			if err := CopyDir(srcPath, dstPath, opt); err != nil {
 				return err
 			}
 		} else {
-			// Skip symlinks.
+			// Skip symlinks
 			if entry.Type()&os.ModeSymlink != 0 {
 				continue
 			}
-
-			// Copy files.
+			// Copy files
 			if err := copyFileR(srcPath, dstPath); err != nil {
 				return err
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -476,42 +521,43 @@ func CopyDir(src, dst string) error {
 // of the source file. The file mode will be copied from the source and
 // the copied data is synced/flushed to stable storage.
 func copyFileR(src, dst string) (err error) {
+	// Open source
 	in, err := os.Open(src)
 	if err != nil {
-		return
+		return err
 	}
 	defer in.Close()
 
+	// Create dest
 	out, err := os.Create(dst)
 	if err != nil {
-		return
+		return err
 	}
 	defer func() {
-		if e := out.Close(); e != nil {
+		if e := out.Close(); e != nil && err == nil { // Only set if no prior err
 			err = e
 		}
 	}()
 
-	_, err = io.Copy(out, in)
-	if err != nil {
-		return
+	// Copy contents
+	if _, err = io.Copy(out, in); err != nil {
+		return err
 	}
 
-	err = out.Sync()
-	if err != nil {
-		return
+	// Sync for data integrity
+	if err = out.Sync(); err != nil {
+		return err
 	}
 
+	// Preserve mode
 	si, err := os.Stat(src)
 	if err != nil {
-		return
+		return err
 	}
-	err = os.Chmod(dst, si.Mode())
-	if err != nil {
-		return
+	if err = os.Chmod(dst, si.Mode()); err != nil {
+		return err
 	}
-
-	return
+	return nil
 }
 
 // AppendDataNewLine appends data to a file, adding a newline at the end.
@@ -848,4 +894,40 @@ func EvaluateMockRootDir(mockDir string, rootDir string, deleteRoot bool) error 
 	}
 
 	return nil
+}
+
+// IsPathWithin returns true if target is the same as base or a descendant of base.
+// Both base and target may be relative or absolute; they will be resolved to absolute paths.
+// Symlinks are not resolved here; if you need that, wrap Abs with EvalSymlinks.
+func IsPathWithin(base, target string) (bool, error) {
+	absBase, err := filepath.Abs(base)
+	if err != nil {
+		return false, err
+	}
+	absTarget, err := filepath.Abs(target)
+	if err != nil {
+		return false, err
+	}
+
+	rel, err := filepath.Rel(absBase, absTarget)
+	if err != nil {
+		return false, err
+	}
+
+	// Normalize separators and case for Windows
+	sep := string(filepath.Separator)
+	if runtime.GOOS == "windows" {
+		absBase = strings.ToLower(strings.ReplaceAll(absBase, "/", sep))
+		absTarget = strings.ToLower(strings.ReplaceAll(absTarget, "/", sep))
+		rel = strings.ToLower(strings.ReplaceAll(rel, "/", sep))
+	}
+
+	if rel == "." {
+		return true, nil
+	}
+	// rel starting with ".." means target is outside base
+	if rel == ".." || strings.HasPrefix(rel, ".."+sep) {
+		return false, nil
+	}
+	return true, nil
 }

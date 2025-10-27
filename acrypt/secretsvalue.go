@@ -44,30 +44,56 @@ func (s *SecretsValue) IsValidParsedValue() bool {
 	return err == nil
 }
 
-// NewJWTSecretKey initializes a new JWT secret key with a default encrypted format and rotates old values.
-func (s *SecretsValue) NewJWTSecretKey() error {
+// NewRandomSecret generates and sets a new random 32-byte secret key in decrypted format.
+// Suitable for any secret type (e.g., JWT, BadgerDB encryption keys).
+func (s *SecretsValue) NewRandomSecret() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Generate a new ChaCha20 key.
+	// Generate a new key.
 	secretKey, err := GenerateSecretKey()
 	if err != nil {
-		return fmt.Errorf("failed to generate new JWT secret key: %v", err)
+		return fmt.Errorf("failed to generate new secret key: %v", err)
 	}
 
 	// Encode the key in base64.
 	encodedKey := base64.StdEncoding.EncodeToString(secretKey)
 
-	// Update old value and assign new value with encrypted format.
+	// Update old value and expiration if MaxDuration is set.
 	s.OldValue = s.Value
 	if s.MaxDuration > 0 {
 		expiresAt := time.Now().Add(time.Duration(s.MaxDuration) * time.Minute)
 		s.OldValueExpiresAt = &expiresAt
 	}
+
+	// Assign new value with decrypted format.
 	newValue := fmt.Sprintf("%s;%s;%s;%s", CRYPTMODE_DECRYPTED, ENCODINGTYPE_BASE64, ENCRYPTIONTYPE_AES256, encodedKey)
 	s.Value = SecretsValueRaw(newValue)
 	s.valueDecoded = secretKey
 	return nil
+}
+
+// NewJWTSecretKey initializes a new JWT secret key with a default encrypted format and rotates old values.
+func (s *SecretsValue) NewJWTSecretKey() error {
+	return s.NewRandomSecret()
+	//secretKey, err := GenerateSecretKey()
+	//if err != nil {
+	//	return fmt.Errorf("failed to generate new JWT secret key: %v", err)
+	//}
+	//
+	//// Encode the key in base64.
+	//encodedKey := base64.StdEncoding.EncodeToString(secretKey)
+	//
+	//// Update old value and assign new value with encrypted format.
+	//s.OldValue = s.Value
+	//if s.MaxDuration > 0 {
+	//	expiresAt := time.Now().Add(time.Duration(s.MaxDuration) * time.Minute)
+	//	s.OldValueExpiresAt = &expiresAt
+	//}
+	//newValue := fmt.Sprintf("%s;%s;%s;%s", CRYPTMODE_DECRYPTED, ENCODINGTYPE_BASE64, ENCRYPTIONTYPE_AES256, encodedKey)
+	//s.Value = SecretsValueRaw(newValue)
+	//s.valueDecoded = secretKey
+	//return nil
 }
 
 // Decode decrypts and decodes the value of the secret, with an option to cache the decoded value.

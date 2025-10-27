@@ -11,9 +11,11 @@ import (
 )
 
 // ISON_SNIPPETS_HTML_LOADBYFILE determines if HTML snippets should be loaded from files on each request.
+// Deprecated
 var ISON_SNIPPETS_HTML_LOADBYFILE = false
 
 // TSnippetsHTML holds HTML templates and related data for rendering snippets.
+// Deprecated
 type TSnippetsHTML struct {
 	snippets map[string]*template.Template // Map of snippet names to their compiled templates.
 	funcMap  *template.FuncMap             // Function map for template rendering, allows for custom functions.
@@ -23,6 +25,7 @@ type TSnippetsHTML struct {
 }
 
 // NewTSnippetsHTML creates a new TSnippetsHTML instance, loading snippet templates from the specified directory.
+// Deprecated
 func NewTSnippetsHTML(dir string, funcMap *template.FuncMap) *TSnippetsHTML {
 	// Use common HTML template functions if no specific function map is provided.
 	if funcMap == nil {

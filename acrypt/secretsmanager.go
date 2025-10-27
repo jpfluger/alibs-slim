@@ -24,7 +24,7 @@ type SecretsManager struct {
 	Secrets SecretsItems `json:"secrets,omitempty"` // Collection of secrets.
 	//mappedSecrets  SecretsItemsMap // Cached secrets map for efficient lookup.
 	decodedSecrets DecodedSecretsMap // Cache decoded secrets for efficient lookup
-	masterPassword string            // Optional master password for encoding/decoding.
+	masterPassword string            // Required master password for encoding/decoding.
 	mu             sync.RWMutex      // Mutex for thread-safe access.
 }
 

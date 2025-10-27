@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/jpfluger/alibs-slim/ajson"
 	"github.com/stretchr/testify/assert"
-	"path/filepath"
 	"testing"
 )
 
@@ -397,14 +396,15 @@ func TestDeploymentTypes_SelectPreferredDefault(t *testing.T) {
 }
 
 func TestDeploymentType_UnmarshalJSON(t *testing.T) {
-	//tempDir := t.TempDir()
-	configFile := filepath.Join("test_data", "deployment_types.json")
-	//err := ajson.MarshalIndentAndSaveFile(configFile, map[string]interface{}{
-	//	"type":    "dev",
-	//	"types":   []string{"dev", "qa", "prod:demo"},
-	//	"invalid": "dev@invalid",
-	//})
-	//assert.NoError(t, err, "Failed to create test JSON file")
+	jsonData := []byte(`{
+		"type": "dev",
+		"types": ["dev", "qa", "prod:demo"],
+		"invalid": "dev@invalid"
+	}`)
+
+	var m map[string]json.RawMessage
+	err := json.Unmarshal(jsonData, &m)
+	assert.NoError(t, err, "Failed to unmarshal JSON map")
 
 	tests := []struct {
 		name     string
@@ -442,14 +442,6 @@ func TestDeploymentType_UnmarshalJSON(t *testing.T) {
 			case "invalid_deployment_type":
 				key = "invalid"
 			}
-
-			var raw json.RawMessage
-			err := ajson.UnmarshalFile(configFile, &raw)
-			assert.NoError(t, err, "Failed to read JSON file")
-
-			var m map[string]json.RawMessage
-			err = json.Unmarshal(raw, &m)
-			assert.NoError(t, err, "Failed to unmarshal JSON map")
 
 			err = ajson.UnmarshalRawMessage(m[key], tc.target)
 			if tc.wantErr {

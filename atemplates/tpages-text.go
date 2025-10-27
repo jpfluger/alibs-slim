@@ -3,7 +3,6 @@ package atemplates
 import (
 	"bytes"
 	"fmt"
-	"github.com/jpfluger/alibs-slim/autils"
 	"html/template"
 	"io"
 	"os"
@@ -11,17 +10,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/labstack/echo/v4"
+	"github.com/jpfluger/alibs-slim/autils"
+
 	"github.com/jpfluger/alibs-slim/alog"
+	"github.com/labstack/echo/v4"
 )
 
 // ISON_PAGES_TEXT_LOADBYFILE determines if pages should be loaded from files on each request.
+// Deprecated
 var ISON_PAGES_TEXT_LOADBYFILE = false
 
-// ISON_PAGES_TEXT_LOG_ERROR enables logging of errors during template execution.
-var ISON_PAGES_TEXT_LOG_ERROR = false
-
 // TPagesText is a custom HTML/template renderer for the Echo framework.
+// Deprecated
 type TPagesText struct {
 	templates   map[string]*template.Template // Map of template names to their compiled templates.
 	funcMap     *template.FuncMap             // Function map for template rendering, allows for custom functions.
@@ -30,6 +30,7 @@ type TPagesText struct {
 }
 
 // NewTPagesText creates a new TPagesText instance, loading templates from the specified directory.
+// Deprecated
 func NewTPagesText(dir string, funcMap *template.FuncMap) *TPagesText {
 	// Use common text template functions if no specific function map is provided.
 	if funcMap == nil {

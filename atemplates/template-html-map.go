@@ -2,12 +2,13 @@ package atemplates
 
 import (
 	"fmt"
-	"github.com/dustin/go-humanize"
-	"github.com/gofrs/uuid/v5"
-	"github.com/jpfluger/alibs-slim/atime"
 	htemplate "html/template"
 	"strings"
 	"unicode"
+
+	"github.com/dustin/go-humanize"
+	"github.com/gofrs/uuid/v5"
+	"github.com/jpfluger/alibs-slim/atime"
 )
 
 // TemplateHtmlMap is a map that associates string keys with HTML templates.
@@ -97,12 +98,16 @@ func GetHTMLTemplateFunctions(fmapType TemplateFunctions) *htemplate.FuncMap {
 			"ArrayContainsString": ArrayContainsString,
 
 			// HTML-specific functions to ensure safe rendering.
-			"SafeURL":               SafeURL,
-			"SafeHtml":              SafeHtml,
-			"SafeHtmlAttr":          SafeHtmlAttr,
-			"SafeJS":                SafeJS,
+			"SafeURL":      SafeURL,
+			"SafeHtml":     SafeHtml,
+			"SafeHtmlAttr": SafeHtmlAttr,
+			"SafeJS":       SafeJS,
+			// Deprecated
 			"MustSnippetRenderHTML": MustSnippetRenderHTML,
+			// Deprecated
 			"MustSnippetRenderText": MustSnippetRenderText,
+			"MustRenderHTML":        MustFSSnippetRenderHTML,
+			"MustRenderText":        MustFSSnippetRenderText,
 		}
 	default:
 		// Return an empty function map if no common functions are requested.

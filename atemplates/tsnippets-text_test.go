@@ -9,7 +9,7 @@ import (
 func TestRenderSnippet(t *testing.T) {
 	// Mock function map and directory for testing.
 	funcMap := GetTextTemplateFunctions(TEMPLATE_FUNCTIONS_COMMON)
-	dir := "test_files/"
+	dir := "test_data/"
 
 	// This must be set to true even if "loadFile" is false, so
 	// that a reference to the file is created inside TSnippetsText

@@ -11,9 +11,11 @@ import (
 )
 
 // ISON_SNIPPETS_TEXT_LOADBYFILE indicates whether to load snippets from file on each request.
+// Deprecated
 var ISON_SNIPPETS_TEXT_LOADBYFILE = false
 
 // TSnippetsText holds the templates and related information for rendering snippets.
+// Deprecated
 type TSnippetsText struct {
 	snippets map[string]*template.Template // Map of snippet names to their compiled templates.
 	funcMap  *template.FuncMap             // Function map for template rendering, allows for custom functions.
@@ -23,6 +25,7 @@ type TSnippetsText struct {
 }
 
 // NewTSnippetsText creates a new TSnippetsText instance, loading snippet templates from the specified directory.
+// Deprecated
 func NewTSnippetsText(dir string, funcMap *template.FuncMap) *TSnippetsText {
 	// Use common template functions if no specific function map is provided.
 	if funcMap == nil {
