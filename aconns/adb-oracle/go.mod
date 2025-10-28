@@ -5,7 +5,7 @@ go 1.25.0
 replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
-	github.com/jpfluger/alibs-slim v0.9.8
+	github.com/jpfluger/alibs-slim v0.9.9
 	github.com/sijms/go-ora/v2 v2.9.0
 	github.com/stretchr/testify v1.11.1
 )

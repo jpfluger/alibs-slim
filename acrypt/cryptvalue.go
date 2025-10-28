@@ -123,6 +123,29 @@ func (cvm CryptValueMap) Initialize(requiredKeys []SecretsKey) error {
 	return nil
 }
 
+// SetCryptValueClearBytes sets or updates the CryptValue for the specified key using the provided clear bytes.
+// The bytes are encoded in base64 and stored in the format "base64;<encoded>".
+// It validates the key and bytes, decodes to cache the value, and returns an error if the key is empty,
+// the bytes are nil or empty, or if decoding fails (though decoding failure is unlikely since the value is freshly encoded).
+func (cvm CryptValueMap) SetCryptValueClearBytes(key SecretsKey, clearBytes []byte) error {
+	if key.IsEmpty() {
+		return fmt.Errorf("key is empty")
+	}
+	if clearBytes == nil || len(clearBytes) == 0 {
+		return fmt.Errorf("clear bytes is empty")
+	}
+	encoded := base64.StdEncoding.EncodeToString(clearBytes)
+	cv := &CryptValue{
+		Value: fmt.Sprintf("base64;%s", encoded),
+	}
+	_, err := cv.Decode() // Cache
+	if err != nil {
+		return err
+	}
+	cvm[key] = cv
+	return nil
+}
+
 // Validate checks all required keys are present and valid.
 func (cvm CryptValueMap) Validate(requiredKeys []SecretsKey) error {
 	for _, key := range requiredKeys {

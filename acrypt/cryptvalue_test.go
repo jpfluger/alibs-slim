@@ -223,6 +223,73 @@ func TestCryptValueMap_Initialize(t *testing.T) {
 	}
 }
 
+func TestCryptValueMap_SetCryptValueClearBytes(t *testing.T) {
+	tests := []struct {
+		name        string
+		key         SecretsKey
+		clearBytes  []byte
+		wantErr     bool
+		wantErrMsg  string
+		wantValue   string // Expected formatted Value after set
+		wantDecoded []byte // Expected decoded value
+	}{
+		{
+			name:        "Successful Set",
+			key:         "test",
+			clearBytes:  []byte("abc"),
+			wantErr:     false,
+			wantValue:   "base64;YWJj",
+			wantDecoded: []byte("abc"),
+		},
+		{
+			name:       "Empty Key",
+			key:        "", // Assuming SecretsKey("") is empty
+			clearBytes: []byte("abc"),
+			wantErr:    true,
+			wantErrMsg: "key is empty",
+		},
+		{
+			name:       "Nil ClearBytes",
+			key:        "test",
+			clearBytes: nil,
+			wantErr:    true,
+			wantErrMsg: "clear bytes is empty",
+		},
+		{
+			name:       "Empty ClearBytes",
+			key:        "test",
+			clearBytes: []byte{},
+			wantErr:    true,
+			wantErrMsg: "clear bytes is empty",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cvm := make(CryptValueMap)
+			err := cvm.SetCryptValueClearBytes(tt.key, tt.clearBytes)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("expected error %v, got %v", tt.wantErr, err)
+			}
+			if tt.wantErr && !strings.Contains(err.Error(), tt.wantErrMsg) {
+				t.Errorf("expected error message containing %q, got %v", tt.wantErrMsg, err)
+			}
+			if !tt.wantErr {
+				cv, exists := cvm[tt.key]
+				if !exists {
+					t.Error("key not set in map")
+				}
+				if cv.Value != tt.wantValue {
+					t.Errorf("expected Value %q, got %q", tt.wantValue, cv.Value)
+				}
+				decoded := cv.GetDecoded()
+				if !bytes.Equal(decoded, tt.wantDecoded) {
+					t.Errorf("expected decoded %v, got %v", tt.wantDecoded, decoded)
+				}
+			}
+		})
+	}
+}
+
 func TestCryptValueMap_Validate(t *testing.T) {
 	tests := []struct {
 		name     string

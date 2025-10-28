@@ -7,7 +7,7 @@ replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 require (
 	github.com/alexedwards/scs/redisstore v0.0.0-20250417082927-ab20b3feb5e9
 	github.com/gomodule/redigo v1.9.3
-	github.com/jpfluger/alibs-slim v0.9.8
+	github.com/jpfluger/alibs-slim v0.9.9
 	github.com/stretchr/testify v1.11.1
 )
 

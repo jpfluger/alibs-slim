@@ -6,7 +6,7 @@ replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
 	github.com/jhillyerd/enmime/v2 v2.2.0
-	github.com/jpfluger/alibs-slim v0.9.8
+	github.com/jpfluger/alibs-slim v0.9.9
 	github.com/stretchr/testify v1.11.1
 )
 

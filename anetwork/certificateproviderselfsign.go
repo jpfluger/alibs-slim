@@ -310,6 +310,24 @@ type CertStorage struct {
 	KeyPEM  []byte `json:"key_pem"`
 }
 
+// Clone returns a deep copy of the CertStorage.
+// It creates new byte slices for CertPEM and KeyPEM to avoid shared memory.
+func (cs *CertStorage) Clone() *CertStorage {
+	if cs == nil {
+		return nil
+	}
+	clone := &CertStorage{}
+	if cs.CertPEM != nil {
+		clone.CertPEM = make([]byte, len(cs.CertPEM))
+		copy(clone.CertPEM, cs.CertPEM)
+	}
+	if cs.KeyPEM != nil {
+		clone.KeyPEM = make([]byte, len(cs.KeyPEM))
+		copy(clone.KeyPEM, cs.KeyPEM)
+	}
+	return clone
+}
+
 // ToTLSCertificate parses the stored PEM into a tls.Certificate.
 func (cs *CertStorage) ToTLSCertificate() (*tls.Certificate, error) {
 	if len(cs.CertPEM) == 0 || len(cs.KeyPEM) == 0 {

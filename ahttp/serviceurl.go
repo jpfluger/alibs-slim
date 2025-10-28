@@ -134,6 +134,35 @@ func (su *ServiceUrl) GetKeyFile() string {
 	return su.KeyFile
 }
 
+// Clone returns a deep copy of the ServiceUrl.
+// It copies all fields, including cloning the internal URL and CertStorage if set.
+func (su *ServiceUrl) Clone() *ServiceUrl {
+	clone := &ServiceUrl{
+		ListenPort: su.ListenPort,
+		PublicUrl:  su.PublicUrl,
+		CertFile:   su.CertFile,
+		KeyFile:    su.KeyFile,
+		dirRoot:    su.dirRoot,
+		certFile:   su.certFile,
+		keyFile:    su.keyFile,
+		isTLS:      su.isTLS,
+	}
+
+	if su.u != nil {
+		if u, err := url.Parse(su.u.String()); err == nil {
+			clone.u = u
+		}
+	}
+
+	if su.CertStorage != nil {
+		// Assuming CertStorage has a Clone method; if not, implement deep copy logic here.
+		// If CertStorage is immutable or shallow copy is safe, use *su.CertStorage.
+		clone.CertStorage = su.CertStorage.Clone() // Replace with appropriate copy if no Clone exists.
+	}
+
+	return clone
+}
+
 // ServiceUrlOpts defines options for creating a new ServiceUrl.
 type ServiceUrlOpts struct {
 	Default        *ServiceUrl

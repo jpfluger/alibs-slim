@@ -285,6 +285,22 @@ var GetAppVersion = func() (*AppVersion, error) {
 	return global.instance, nil
 }
 
+// APPVERSION returns the global AppVersion instance.
+// Panics if not initialized.
+func APPVERSION() *AppVersion {
+	return MustAppVersion()
+}
+
+// MustAppVersion returns the global AppVersion instance.
+// Panics if not initialized.
+func MustAppVersion() *AppVersion {
+	appVersion, err := GetAppVersion()
+	if err != nil {
+		panic(err)
+	}
+	return appVersion
+}
+
 // CloneAppVersion returns a clone of the global AppVersion instance.
 // Returns nil if the global instance is not initialized or its Version is nil.
 func CloneAppVersion() *AppVersion {
