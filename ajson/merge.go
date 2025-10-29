@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"regexp"
 	"strings"
 
 	"dario.cat/mergo"
@@ -21,12 +20,73 @@ type MergeOptions struct {
 }
 
 // commentRegex is a precompiled regular expression for removing single-line (//) and multi-line (/* */) comments.
-var commentRegex = regexp.MustCompile(`(?m)//.*$|/\*[\s\S]*?\*/`)
+//var commentRegex = regexp.MustCompile(`(?m)//.*$|/\*[\s\S]*?\*/`)
 
 // StripComments removes single-line (//) and multi-line (/* */) comments from JSON or HJSON text.
 // It returns the cleaned byte slice with comments removed.
+//func StripComments(input []byte) []byte {
+//	return commentRegex.ReplaceAll(input, []byte{})
+//}
+
+// StripComments removes // and /* */ comments but ignores them inside quoted strings.
 func StripComments(input []byte) []byte {
-	return commentRegex.ReplaceAll(input, []byte{})
+	out := make([]byte, 0, len(input))
+	inString := false
+	escaped := false
+
+	for i := 0; i < len(input); i++ {
+		c := input[i]
+
+		// Handle string state
+		if inString {
+			out = append(out, c)
+			if escaped {
+				escaped = false
+				continue
+			}
+			if c == '\\' {
+				escaped = true
+			} else if c == '"' {
+				inString = false
+			}
+			continue
+		}
+
+		// Detect start of string
+		if c == '"' {
+			inString = true
+			out = append(out, c)
+			continue
+		}
+
+		// Detect single-line comment
+		if c == '/' && i+1 < len(input) && input[i+1] == '/' {
+			// skip until newline
+			i += 2
+			for i < len(input) && input[i] != '\n' {
+				i++
+			}
+			// keep the newline if present
+			if i < len(input) {
+				out = append(out, input[i])
+			}
+			continue
+		}
+
+		// Detect multi-line comment
+		if c == '/' && i+1 < len(input) && input[i+1] == '*' {
+			i += 2
+			for i+1 < len(input) && !(input[i] == '*' && input[i+1] == '/') {
+				i++
+			}
+			i++ // skip final '/'
+			continue
+		}
+
+		out = append(out, c)
+	}
+
+	return out
 }
 
 // loadFileToMerge loads a single config file into a map, respecting the provided options.

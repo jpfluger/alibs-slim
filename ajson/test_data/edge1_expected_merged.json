@@ -1,0 +1,14 @@
+{
+  "listener": {
+    "listenPort": 9090,
+    "publicUrl": "https://example.com:1111",
+    "note": "this is not // a comment",
+    "block": "keep /* inside string */ ok",
+    "certFile": "/path/to/server.crt",
+    "keyFile": "/path/to/server.key"
+  },
+  "featureFlags": {
+    "enableX": true,
+    "enableY": true
+  }
+}

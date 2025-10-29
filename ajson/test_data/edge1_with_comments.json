@@ -1,0 +1,16 @@
+{
+  // top-level line comment: should be stripped
+  "listener": {
+    "listenPort": 1111, // inline comment: should be stripped
+    "publicUrl": "https://example.com:1111", // URL contains // inside a string; must NOT be stripped
+    "note": "this is not // a comment",                      // // inside string; must NOT be stripped
+    "block": "keep /* inside string */ ok" /* remove this block comment */
+  },
+
+  "featureFlags": {
+    "enableX": true,
+    "enableY": false // trailing comment: should be stripped
+  }
+
+  /* multi-line comment after object: should be stripped */
+}

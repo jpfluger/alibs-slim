@@ -7,7 +7,7 @@ replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/go-sql-driver/mysql v1.9.3
-	github.com/jpfluger/alibs-slim v0.9.9
+	github.com/jpfluger/alibs-slim v0.9.10
 	github.com/stretchr/testify v1.11.1
 	github.com/uptrace/bun v1.2.15
 	github.com/uptrace/bun/dialect/mysqldialect v1.2.15

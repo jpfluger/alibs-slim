@@ -14,14 +14,14 @@ import (
 // ServiceUrl holds configuration details for a service, including its port, public URL,
 // and TLS certificate information if applicable.
 type ServiceUrl struct {
-	ListenPort int    `json:"listenPort"` // Port on which the service listens, between 1 and 65535.
-	PublicUrl  string `json:"publicUrl"`  // Public URL for the service.
-	CertFile   string `json:"certFile"`   // Path to the TLS certificate file (required if using HTTPS).
-	KeyFile    string `json:"keyFile"`    // Path to the TLS key file (required if using HTTPS).
+	ListenPort int    `json:"listenPort"`         // Port on which the service listens, between 1 and 65535.
+	PublicUrl  string `json:"publicUrl"`          // Public URL for the service.
+	CertFile   string `json:"certFile,omitempty"` // Path to the TLS certificate file (required if using HTTPS).
+	KeyFile    string `json:"keyFile,omitempty"`  // Path to the TLS key file (required if using HTTPS).
 
 	// CertStorage is an optional edge-case scenario where its expected
 	// the certs are embedded into the ServiceUrl.
-	CertStorage *anetwork.CertStorage `json:"certStorage"`
+	CertStorage *anetwork.CertStorage `json:"certStorage,omitempty"`
 
 	u        *url.URL // Parsed URL object for internal use.
 	isTLS    bool     // Indicates if the service uses HTTPS (TLS).

@@ -87,6 +87,14 @@ func TestMergeConfigs(t *testing.T) {
 			expectedFile: "test_data/expected_merged.json",
 		},
 		{
+			name: "commented_json_merge_edge_1",
+			options: MergeOptions{Files: []string{"test_data/edge1_with_comments.json", "test_data/edge1_override.json"},
+				UseHJSON:      false,
+				StripComments: true,
+			},
+			expectedFile: "test_data/edge1_expected_merged.json",
+		},
+		{
 			name: "three_file_merge",
 			options: MergeOptions{
 				Files:         []string{"test_data/base.json", "test_data/override.json", "test_data/env.json"},

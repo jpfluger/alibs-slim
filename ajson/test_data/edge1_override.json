@@ -1,0 +1,12 @@
+{
+  // Override a few fields and add paths that include slashes
+  "listener": {
+    "listenPort": 9090, // override value
+    "certFile": "/path/to/server.crt",
+    "keyFile": "/path/to/server.key"
+  },
+
+  "featureFlags": {
+    "enableY": true // flip from false -> true
+  }
+}

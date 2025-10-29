@@ -6,7 +6,7 @@ replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.12
-	github.com/jpfluger/alibs-slim v0.9.9
+	github.com/jpfluger/alibs-slim v0.9.10
 	github.com/stretchr/testify v1.11.1
 )
 
