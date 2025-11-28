@@ -2,23 +2,35 @@ package aimage
 
 import (
 	"encoding/base64"
-	"github.com/gomig/avatar"
-	"regexp"
+	"fmt"
+	"strings"
+	"sync" // Added for RWMutex
 )
 
 // IMAGE_NAME_AVATAR is the default name for avatar images.
 const IMAGE_NAME_AVATAR = "avatar"
 
-// imageDataCircleQuestion stores the default avatar image data.
-var imageDataCircleQuestion string
+// defaultAvatarData stores the default avatar image data.
+var defaultAvatarData string
+var defaultAvatarMu sync.RWMutex // Added for thread-safe lazy init
 
 // GetDefaultImageDataCircleAvatar returns the default avatar image data,
-// creating it if it doesn't already exist.
+// creating it if it doesn't already exist (thread-safe).
 func GetDefaultImageDataCircleAvatar() string {
-	if imageDataCircleQuestion == "" {
-		imageDataCircleQuestion = CreateImageDataCircleAvatar("?")
+	defaultAvatarMu.RLock()
+	if defaultAvatarData != "" {
+		data := defaultAvatarData
+		defaultAvatarMu.RUnlock()
+		return data
 	}
-	return imageDataCircleQuestion
+	defaultAvatarMu.RUnlock()
+
+	defaultAvatarMu.Lock()
+	defer defaultAvatarMu.Unlock()
+	if defaultAvatarData == "" {
+		defaultAvatarData = CreateImageDataCircleAvatar("?")
+	}
+	return defaultAvatarData
 }
 
 // CreateImageDataCircleAvatar creates an SVG image data URI with a circle and a character in the center.
@@ -28,16 +40,21 @@ func CreateImageDataCircleAvatar(target string) string {
 }
 
 // CreateImageCircleAvatar creates an Image with a circle and a character in the center.
+// Simplified to remove external dependency; uses basic text for letter (can extend with paths if needed).
 func CreateImageCircleAvatar(target string) *Image {
-	// Use a default character if none is provided.
 	if target == "" {
 		target = "?"
 	}
-	// Create an Image struct with the SVG data.
-	avCircle := avatar.NewTextAvatar(target)
-	//return avCircle.Base64()
+	target = strings.ToUpper(string([]rune(target)[0])) // Take first character, uppercase
 
-	svgBytes := []byte(RemoveSVGDescElements(avCircle.InlineSVG()))
+	// Simple SVG template (replaced library for reliability; add letter paths if fancy shapes needed)
+	svg := fmt.Sprintf(`
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="64" cy="64" r="64" fill="#007bff"/>
+  <text x="64" y="64" font-size="64" text-anchor="middle" dy=".35em" fill="white" font-family="sans-serif">%s</text>
+</svg>`, target)
+
+	svgBytes := []byte(svg) // No need for desc removal
 
 	return &Image{
 		ImageInfo: ImageInfo{
@@ -50,22 +67,3 @@ func CreateImageCircleAvatar(target string) *Image {
 		Data: base64.StdEncoding.EncodeToString(svgBytes),
 	}
 }
-
-// Precompile the regular expression for removing <desc> tags.
-var descRegex = regexp.MustCompile(`<desc>.*?</desc>`)
-
-// RemoveSVGDescElements removes the <desc></desc> element from an SVG string.
-// Doing so reduces bloat.
-func RemoveSVGDescElements(svgContent string) string {
-	// Remove the <desc> tags and any content between them from the SVG content.
-	return descRegex.ReplaceAllString(svgContent, "")
-}
-
-// cron-ological
-//
-
-// notebook-esri.git
-// * scripts-linux
-// * scripts-windows
-//   > milsoft
-//     > job.json -> point to a totally different file/directory

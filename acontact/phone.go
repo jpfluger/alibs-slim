@@ -3,9 +3,10 @@ package acontact
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/nyaruka/phonenumbers"
 	"sort"
 	"strings"
+
+	"github.com/nyaruka/phonenumbers"
 )
 
 // https://github.com/nyaruka/phonenumbers
@@ -20,6 +21,11 @@ type Phone struct {
 
 // Validate checks if the Phone fields are valid and tries to parse the number.
 func (p *Phone) Validate() error {
+	return p.ValidateWithOptions(true)
+}
+
+// ValidateWithOptions checks if the Phone fields are valid and optionally tries to parse the number.
+func (p *Phone) ValidateWithOptions(checkValid bool) error {
 	if p.Type.IsEmpty() {
 		return fmt.Errorf("phone type is empty")
 	}
@@ -28,6 +34,10 @@ func (p *Phone) Validate() error {
 
 	if p.Number == "" {
 		return fmt.Errorf("phone number is empty")
+	}
+
+	if !checkValid {
+		return nil
 	}
 
 	// Attempt to parse the phone number and determine the country code.
@@ -78,6 +88,40 @@ func (p *Phone) guessNumberCountry() (phone, country string, err error) {
 
 // Phones is a slice of Phone pointers, representing a collection of phone numbers.
 type Phones []*Phone
+
+// Validate validates the entire Phones collection.
+// It checks each Phone individually and ensures no duplicates or multiple defaults.
+func (ps Phones) Validate() error {
+	return ps.ValidateWithOptions(true)
+}
+
+// ValidateWithOptions validates the entire Phones collection.
+// It checks each Phone individually and ensures no duplicates or multiple defaults.
+func (ps Phones) ValidateWithOptions(checkValid bool) error {
+	if len(ps) == 0 {
+		return nil // Empty is valid (optional field)
+	}
+
+	typeMap := make(map[string]bool)
+	defaultCount := 0
+	for _, p := range ps {
+		if err := p.ValidateWithOptions(checkValid); err != nil {
+			return fmt.Errorf("phone validation failed for type %s: %v", p.Type, err)
+		}
+		key := p.Type.ToStringTrimLower()
+		if typeMap[key] {
+			return fmt.Errorf("duplicate phone type: %s", key)
+		}
+		typeMap[key] = true
+		if p.IsDefault {
+			defaultCount++
+		}
+	}
+	if defaultCount > 1 {
+		return fmt.Errorf("only one default phone is allowed")
+	}
+	return nil
+}
 
 // FindByType searches for a phone number by its type.
 func (ps Phones) FindByType(phoneType PhoneType) *Phone {

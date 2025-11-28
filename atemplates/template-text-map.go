@@ -1,11 +1,12 @@
 package atemplates
 
 import (
+	"strings"
+	ttemplate "text/template"
+
 	"github.com/dustin/go-humanize"
 	"github.com/jpfluger/alibs-slim/atime"
 	"github.com/jpfluger/alibs-slim/atypeconvert"
-	"strings"
-	ttemplate "text/template"
 )
 
 // TemplateTextMap is a map that associates string keys with text templates.
@@ -45,6 +46,7 @@ func GetTextTemplateFunctions(fmapType TemplateFunctions) *ttemplate.FuncMap {
 			"ToUpper":      strings.ToUpper,
 			"ToLower":      strings.ToLower,
 			"ToUpperFirst": ToUpperFirst,
+			"Title":        Title,
 
 			// Conversion functions.
 			"ToInt":       ToInt,

@@ -3,6 +3,7 @@ package aconns
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/jpfluger/alibs-slim/auuids"
 )
 
@@ -19,6 +20,8 @@ type IConn interface {
 	GetTenantInfo() *ConnTenantInfo
 	GetAuthScopes() AuthScopes
 	GetAuthUsages() AuthUsages
+	Refresh() error
+	GetHealth() *HealthCheck
 }
 
 type IConns []IConn

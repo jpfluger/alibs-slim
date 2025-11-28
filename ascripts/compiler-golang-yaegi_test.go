@@ -2,12 +2,13 @@ package ascripts
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/traefik/yaegi/interp"
 	"reflect"
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/traefik/yaegi/interp"
 )
 
 // IMyObj is an interface that defines a method to get a message.
@@ -243,7 +244,7 @@ type Data struct {
 }
 
 func (d *Data) PrintChangeMe() {
-	fmt.Printf(d.printChangeMe())
+	fmt.Print(d.printChangeMe())
 }
 
 func (d *Data) PrintChangeMeExternal() string {

@@ -1,7 +1,6 @@
 package aimage
 
 import (
-	"github.com/jpfluger/alibs-slim/autils"
 	"mime"
 	"strings"
 	"testing"
@@ -33,9 +32,11 @@ func TestExtMimeTypeMap_FindMime(t *testing.T) {
 		customExtMimeTypes = originalExtMimeTypes
 	}()
 
-	customExtMimeTypes = ExtMimeTypeMap{
-		"jpg": {Ext: "jpg", Mime: "image/jpeg"},
-		"tif": {Ext: "tif", Mime: "image/tiff", CleanedExt: "tiff"},
+	customExtMimeTypes = &ExtMimeTypeMap{
+		m: map[ImageType]ExtMimeType{
+			ImageType("jpg"): {Ext: "jpg", Mime: "image/jpeg"},
+			ImageType("tif"): {Ext: "tif", Mime: "image/tiff", CleanedExt: "tiff"},
+		},
 	}
 
 	tests := []struct {
@@ -64,9 +65,11 @@ func TestExtMimeTypeMap_GetCleanedExt(t *testing.T) {
 		customExtMimeTypes = originalExtMimeTypes
 	}()
 
-	customExtMimeTypes = ExtMimeTypeMap{
-		"jpg": {Ext: "jpg", Mime: "image/jpeg"},
-		"tif": {Ext: "tif", Mime: "image/tiff", CleanedExt: "tiff"},
+	customExtMimeTypes = &ExtMimeTypeMap{
+		m: map[ImageType]ExtMimeType{
+			ImageType("jpg"): {Ext: "jpg", Mime: "image/jpeg"},
+			ImageType("tif"): {Ext: "tif", Mime: "image/tiff", CleanedExt: "tiff"},
+		},
 	}
 
 	tests := []struct {
@@ -95,7 +98,9 @@ func TestSetExtMimeType(t *testing.T) {
 		customExtMimeTypes = originalExtMimeTypes
 	}()
 
-	customExtMimeTypes = ExtMimeTypeMap{}
+	customExtMimeTypes = &ExtMimeTypeMap{
+		m: make(map[ImageType]ExtMimeType),
+	}
 
 	tests := []struct {
 		name       string
@@ -149,12 +154,18 @@ func TestSetExtMimeType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			SetExtMimeType(tt.ext, tt.mimeType, nil, []string{tt.cleanedExt}...)
-			result, exists := customExtMimeTypes[ImageType(autils.StripExtensionPrefix(tt.ext))]
-			if !exists {
-				t.Errorf("Extension %q not added to customExtMimeTypes", tt.ext)
+			if tt.cleanedExt != "" {
+				SetExtMimeType(tt.ext, tt.mimeType, tt.tags, tt.cleanedExt)
+			} else {
+				SetExtMimeType(tt.ext, tt.mimeType, tt.tags)
 			}
-			if result.Mime != tt.expected.Mime && result.CleanedExt != tt.expected.CleanedExt && result.Ext != tt.expected.Ext {
+			emt := customExtMimeTypes.FindExtMime(tt.ext)
+			if emt == nil {
+				t.Errorf("Extension %q not added to customExtMimeTypes", tt.ext)
+				return
+			}
+			result := *emt
+			if result.Mime != tt.expected.Mime || result.CleanedExt != tt.expected.CleanedExt || result.Ext != tt.expected.Ext {
 				t.Errorf("SetExtMimeType(%q, %q, %v) = %+v; expected %+v", tt.ext, tt.mimeType, tt.cleanedExt, result, tt.expected)
 			}
 		})
@@ -167,9 +178,11 @@ func TestCleanMimeType(t *testing.T) {
 		customExtMimeTypes = originalExtMimeTypes
 	}()
 
-	customExtMimeTypes = ExtMimeTypeMap{
-		"jpg": {Ext: "jpg", Mime: "image/jpeg", CleanedExt: "jpeg"},
-		"tif": {Ext: "tif", Mime: "image/tiff", CleanedExt: "tiff"},
+	customExtMimeTypes = &ExtMimeTypeMap{
+		m: map[ImageType]ExtMimeType{
+			ImageType("jpg"): {Ext: "jpg", Mime: "image/jpeg", CleanedExt: "jpeg"},
+			ImageType("tif"): {Ext: "tif", Mime: "image/tiff", CleanedExt: "tiff"},
+		},
 	}
 
 	tests := []struct {

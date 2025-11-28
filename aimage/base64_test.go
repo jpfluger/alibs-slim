@@ -1,10 +1,11 @@
 package aimage
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // All test images part of public domain

@@ -1,8 +1,8 @@
 package aimage
 
 type ImageFilterOption struct {
-	Types ImageTypes // List of allowed image types/extensions
-	Tags  []string   // List of allowed tags
+	Types ImageTypes `json:"types,omitempty"` // List of allowed image types/extensions
+	Tags  []string   `json:"tags,omitempty"`  // List of allowed tags
 }
 
 func (f *ImageFilterOption) HasOptions() bool {

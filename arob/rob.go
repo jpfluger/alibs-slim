@@ -35,6 +35,14 @@ func NewROBWithMessage(message ROBMessage) *ROB {
 	return &ROB{Message: message}
 }
 
+// NewROBWithTypeMessage creates a new ROB with a specified type and message.
+func NewROBWithTypeMessage(messageType ROBType, message ROBMessage) *ROB {
+	if messageType.IsEmpty() {
+		messageType = ROBTYPE_INFO
+	}
+	return &ROB{MessageType: messageType, Message: message}
+}
+
 // NewROBWithMessagef creates a new ROB with a formatted message.
 func NewROBWithMessagef(message ROBMessage, v ...interface{}) *ROB {
 	return &ROB{Message: ROBMessage(fmt.Sprintf(message.String(), v...))}

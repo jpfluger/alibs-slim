@@ -1,29 +1,56 @@
 package azb
 
-// DIN represents a Data Input Node that includes an action and can be extended with additional data.
-type DIN struct {
-	ZAction ZAction `json:"zaction"` // The action associated with this data input node.
-	// Extend DIN with specific or generic data structures as needed.
-	// Data Contact `json:"data"` // Uncomment to use a specific struct.
-	// Data interface{} `json:"data"` // Uncomment to use a generic struct.
-}
+import "errors"
 
 // IDINPaginate is an interface for data input nodes that support pagination.
 type IDINPaginate interface {
-	Validate() error                                    // Validates the data input node.
-	NewPaginate(totalItems, itemsPerPage int) *Paginate // Creates a new Paginate instance with total items and items per page.
+	Validate() error
+	NewPaginate(totalItems int, cursor string) (*Paginate, error)
 }
 
-// Validate synchronizes the page limit with the ZAction's page limit and resets the current page.
-func (dinp *DIN) Validate() error {
-	if dinp.ZAction.PageLimit != dinp.ZAction.PageLimit {
-		dinp.ZAction.PageLimit = dinp.ZAction.PageLimit // Update the ZAction's page limit if different.
-		dinp.ZAction.PageOn = 1                         // Reset to the first page.
+// DIN integrates ZAction for data input, with pagination.
+// It implements IDINPaginate.
+type DIN struct {
+	ZAction ZAction `json:"zaction"`
+
+	// Embed Paginate for direct access after validation.
+	Paginate *Paginate `json:"paginate,omitempty"`
+}
+
+// Validate handles ZAction params, aligning with client JS (parseIntOrZero).
+func (din *DIN) Validate() error {
+	if din.ZAction.PageLimit <= 0 {
+		din.ZAction.PageLimit = 25 // Default, or use GetPerPageLimitElseDefault.
 	}
-	return nil // No validation errors.
+	if din.ZAction.PageOn <= 0 {
+		din.ZAction.PageOn = 1
+	}
+	// Additional validation (e.g., for cursor if UUID query).
+	return nil
 }
 
-// NewPaginate creates a new Paginate instance with the provided total items and items per page.
-func (dinp *DIN) NewPaginate(totalItems, itemsPerPage int) *Paginate {
-	return NewPaginate(dinp.ZAction.PageOn, totalItems, itemsPerPage)
+// NewPaginate builds from ZAction, with totalItems from query results.
+func (din *DIN) NewPaginate(totalItems int, cursor string) (*Paginate, error) {
+	if err := din.Validate(); err != nil {
+		return nil, err
+	}
+	if totalItems < 0 {
+		return nil, errors.New("totalItems must be non-negative")
+	}
+	p := NewPaginate(din.ZAction.PageOn, totalItems, din.ZAction.PageLimit, cursor)
+	din.Paginate = p
+	return p, nil
+}
+
+// NewPaginateNoAll builds from ZAction, with totalItems from query results.
+func (din *DIN) NewPaginateNoAll(totalItems int, cursor string) (*Paginate, error) {
+	if err := din.Validate(); err != nil {
+		return nil, err
+	}
+	if totalItems < 0 {
+		return nil, errors.New("totalItems must be non-negative")
+	}
+	p := NewPaginateNoAll(din.ZAction.PageOn, totalItems, din.ZAction.PageLimit, cursor)
+	din.Paginate = p
+	return p, nil
 }

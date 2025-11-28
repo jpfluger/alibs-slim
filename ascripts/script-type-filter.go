@@ -45,6 +45,8 @@ func GetScriptTypeFilterDefaults(scriptTypes ScriptTypes) ScriptTypeFilters {
 			stfs = append(stfs, &ScriptTypeFilter{Type: SCRIPTTYPE_HTML, Title: "HTML"})
 		case SCRIPTTYPE_MARKDOWN:
 			stfs = append(stfs, &ScriptTypeFilter{Type: SCRIPTTYPE_MARKDOWN, Title: "Markdown"})
+		case SCRIPTTYPE_MARKDOWN_HTML:
+			stfs = append(stfs, &ScriptTypeFilter{Type: SCRIPTTYPE_MARKDOWN_HTML, Title: "Markdown with HTML"})
 		case SCRIPTTYPE_CSS:
 			stfs = append(stfs, &ScriptTypeFilter{Type: SCRIPTTYPE_CSS, Title: "CSS"})
 		case SCRIPTTYPE_JS:

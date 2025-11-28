@@ -301,6 +301,20 @@ func MustAppVersion() *AppVersion {
 	return appVersion
 }
 
+// MustAppAtVersion returns the formatted string "app@version" of the global AppVersion instance.
+// Panics if not initialized.
+func MustAppAtVersion() string {
+	appVersion, err := GetAppVersion()
+	if err != nil {
+		panic(err)
+	}
+	format, err := appVersion.Format(APPVERSIONFORMAT_APP_AT_VERSION)
+	if err != nil {
+		panic(err)
+	}
+	return format
+}
+
 // CloneAppVersion returns a clone of the global AppVersion instance.
 // Returns nil if the global instance is not initialized or its Version is nil.
 func CloneAppVersion() *AppVersion {

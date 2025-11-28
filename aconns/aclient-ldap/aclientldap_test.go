@@ -2,12 +2,61 @@ package aclient_ldap
 
 import (
 	"crypto/tls"
+	"testing"
+
 	"github.com/go-ldap/ldap/v3"
 	"github.com/jpfluger/alibs-slim/aconns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
 )
+
+//// MockLdapConnPool mocks LdapConnPool for testing purposes.
+//type MockLdapConnPool struct {
+//	mock.Mock
+//}
+//
+//func (m *MockLdapConnPool) CloseAllConnections() error {
+//	return nil
+//}
+//
+//func (m *MockLdapConnPool) GetConnection(conf ILdapConfig) (ILdapConn, error) {
+//	args := m.Called(conf)
+//	return args.Get(0).(*ldap.Conn), args.Error(1)
+//}
+//
+//func (m *MockLdapConnPool) PutConnection(conn ILdapConn) {
+//	m.Called(conn)
+//}
+//
+//// MockLdapConn is a mock for the ILdapConn interface.
+//type MockLdapConn struct {
+//	mock.Mock
+//}
+//
+//func (m *MockLdapConn) StartTLS(config *tls.Config) error {
+//	args := m.Called(config)
+//	return args.Error(0)
+//}
+//
+//func (m *MockLdapConn) Bind(username, password string) error {
+//	args := m.Called(username, password)
+//	return args.Error(0)
+//}
+//
+//func (m *MockLdapConn) Search(searchRequest *ldap.SearchRequest) (*ldap.SearchResult, error) {
+//	args := m.Called(searchRequest)
+//	return args.Get(0).(*ldap.SearchResult), args.Error(1)
+//}
+//
+//func (m *MockLdapConn) Close() error {
+//	args := m.Called()
+//	return args.Error(0)
+//}
+//
+//func (m *MockLdapConn) IsClosing() bool {
+//	args := m.Called()
+//	return args.Bool(0)
+//}
 
 // MockLdapConnPool mocks LdapConnPool for testing purposes.
 type MockLdapConnPool struct {
@@ -18,9 +67,10 @@ func (m *MockLdapConnPool) CloseAllConnections() error {
 	return nil
 }
 
+// GetConnection now returns ILdapConn (the mock we created).
 func (m *MockLdapConnPool) GetConnection(conf ILdapConfig) (ILdapConn, error) {
 	args := m.Called(conf)
-	return args.Get(0).(*ldap.Conn), args.Error(1)
+	return args.Get(0).(ILdapConn), args.Error(1)
 }
 
 func (m *MockLdapConnPool) PutConnection(conn ILdapConn) {
@@ -102,9 +152,11 @@ func TestAClientLDAP_InitPool(t *testing.T) {
 // Unit Test: Test Connection
 func TestAClientLDAP_TestConnection(t *testing.T) {
 	client := &AClientLDAP{
-		Base:   "dc=example,dc=com",
-		BindDN: "cn=admin,dc=example,dc=com",
+		Base:              "dc=example,dc=com",
+		BindDN:            "cn=admin,dc=example,dc=com",
+		ConnectionTimeout: 5,
 		ADBAdapterBase: aconns.ADBAdapterBase{
+			Password: "adminpass", // needed for the admin bind
 			Adapter: aconns.Adapter{
 				Type: ADAPTERTYPE_LDAP,
 				Name: "ldap",
@@ -114,18 +166,41 @@ func TestAClientLDAP_TestConnection(t *testing.T) {
 		},
 	}
 
+	// ---- Mock the pool ------------------------------------------------
 	mockPool := new(MockLdapConnPool)
 	client.ldapPool = mockPool
 
-	mockLdapConn := &ldap.Conn{}
+	// ---- Mock the connection -----------------------------------------
+	mockConn := new(MockLdapConn)
 
-	mockPool.On("GetConnection", mock.AnythingOfType("*aclient_ldap.clientLdapConfig")).Return(mockLdapConn, nil)
-	mockPool.On("PutConnection", mockLdapConn).Return(nil)
+	// Pool will return our mock connection
+	mockPool.On("GetConnection", mock.AnythingOfType("*aclient_ldap.clientLdapConfig")).
+		Return(mockConn, nil)
+	mockPool.On("PutConnection", mockConn).Return()
 
+	// ---- Admin bind (BindDN is set) -----------------------------------
+	mockConn.On("Bind", "cn=admin,dc=example,dc=com", "adminpass").
+		Return(nil)
+
+	// ---- Base-object search -------------------------------------------
+	mockConn.On("Search", mock.MatchedBy(func(sr *ldap.SearchRequest) bool {
+		return sr.BaseDN == "dc=example,dc=com" &&
+			sr.Scope == ldap.ScopeBaseObject &&
+			sr.Filter == "(objectClass=*)" &&
+			len(sr.Attributes) == 1 && sr.Attributes[0] == "dn"
+	})).Return(&ldap.SearchResult{}, nil)
+
+	// ---- Run the method under test ------------------------------------
 	success, status, err := client.Test()
-	assert.True(t, success)                                           // Test should succeed.
-	assert.Equal(t, aconns.TESTSTATUS_INITIALIZED_SUCCESSFUL, status) // Status should be successful.
-	assert.Nil(t, err)                                                // No error expected.
+
+	// ---- Assertions ---------------------------------------------------
+	assert.True(t, success)
+	assert.Equal(t, aconns.TESTSTATUS_INITIALIZED_SUCCESSFUL, status)
+	assert.Nil(t, err)
+
+	// Verify that every mocked call was made
+	mockPool.AssertExpectations(t)
+	mockConn.AssertExpectations(t)
 }
 
 // Unit Test: OpenConnection
@@ -144,12 +219,15 @@ func TestAClientLDAP_OpenConnection(t *testing.T) {
 	mockPool := new(MockLdapConnPool)
 	client.ldapPool = mockPool
 
-	mockLdapConn := &ldap.Conn{}
+	mockConn := new(MockLdapConn)
 
-	mockPool.On("GetConnection", mock.AnythingOfType("*aclient_ldap.clientLdapConfig")).Return(mockLdapConn, nil)
+	mockPool.On("GetConnection", mock.AnythingOfType("*aclient_ldap.clientLdapConfig")).Return(mockConn, nil)
+	mockPool.On("PutConnection", mockConn).Return(nil)
 
 	err := client.OpenConnection()
 	assert.Nil(t, err) // Open connection should succeed.
+
+	mockPool.AssertExpectations(t)
 }
 
 // Unit Test: CloseConnection

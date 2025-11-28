@@ -62,3 +62,9 @@ func NewLegalOperatorView(lo *LegalOperator) *LegalOperatorView {
 
 	return view
 }
+
+// IsValid checks if the LegalOperatorView has the required fields populated (CompanyName and BusinessURL).
+// It returns true if the view is non-nil and these fields are non-empty; otherwise, false.
+func (lov *LegalOperatorView) IsValid() bool {
+	return lov != nil && lov.CompanyName != "" && lov.BusinessURL != ""
+}

@@ -2,9 +2,10 @@ package aimage
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jpfluger/alibs-slim/anetwork"
 	"github.com/jpfluger/alibs-slim/autils"
-	"strings"
 )
 
 type ImageInfo struct {
@@ -13,40 +14,40 @@ type ImageInfo struct {
 	OriginalName string           `json:"originalName,omitempty"` // Original filename
 	Size         int              `json:"size,omitempty"`         // Size of the raw data in bytes
 	Url          *anetwork.NetURL `json:"url,omitempty"`          // Optional reference for external data
+	MimeType     string           `json:"mimeType,omitempty"`     // Optional explicit MIME type override (e.g., "text/css")
 }
 
-// Validate checks if the image is valid.
-func (ii *ImageInfo) Validate() error {
-	if ii == nil {
-		return fmt.Errorf("image info is nil")
-	}
-	ii.OriginalName = strings.TrimSpace(ii.OriginalName)
-	ii.Type = ii.Type.TrimSpace()
-	if ii.Type.IsEmpty() {
-		if ii.OriginalName != "" {
-			ext := autils.StripExtensionPrefix(ii.OriginalName)
+// Validate checks if the image is valid and returns a validated copy without mutating the original.
+func (ii ImageInfo) Validate() (ImageInfo, error) {
+	validated := ii // Copy
+	validated.OriginalName = strings.TrimSpace(validated.OriginalName)
+	validated.Type = validated.Type.TrimSpace()
+	if validated.Type.IsEmpty() {
+		if validated.OriginalName != "" {
+			ext := autils.StripExtensionPrefix(validated.OriginalName)
 			if ext != "" {
 				extType := GetCleanedExt(ext)
 				if extType != "" {
-					ii.Type = ImageType(extType)
+					validated.Type = ImageType(extType)
 				}
 			}
 		}
-		if ii.Type.IsEmpty() {
-			return fmt.Errorf("image type is empty")
+		if validated.Type.IsEmpty() && validated.MimeType == "" { // Allow MIME-only if no type
+			return validated, fmt.Errorf("image type and mime type are both empty")
 		}
 	}
-	ii.Name = strings.TrimSpace(ii.Name)
-	if ii.Name == "" {
-		return fmt.Errorf("image name is empty")
+	validated.Name = strings.TrimSpace(validated.Name)
+	if validated.Name == "" {
+		return validated, fmt.Errorf("image name is empty")
 	}
-	if ii.Size < 0 {
-		return fmt.Errorf("image size is negative")
+	if validated.Size < 0 {
+		return validated, fmt.Errorf("image size is negative")
 	}
-	if ii.Url != nil && !ii.Url.IsUrl() {
-		return fmt.Errorf("image url is invalid")
+	if validated.Url != nil && !validated.Url.IsUrl() {
+		return validated, fmt.Errorf("image url is invalid")
 	}
-	return nil
+	validated.MimeType = strings.TrimSpace(validated.MimeType) // Trim new field
+	return validated, nil
 }
 
 // HasType checks if the image has a type set.
@@ -54,10 +55,13 @@ func (ii *ImageInfo) HasType() bool {
 	return ii != nil && !ii.Type.IsEmpty()
 }
 
-// ToImageMimeType returns the MIME type of the image.
+// ToImageMimeType returns the MIME type of the image, preferring explicit MimeType if set.
 func (ii *ImageInfo) ToImageMimeType() string {
 	if ii == nil {
 		return ""
+	}
+	if ii.MimeType != "" {
+		return ii.MimeType // Prefer override
 	}
 	mimeType := GetMimeType(ii.Type.String())
 	if mimeType == "" {

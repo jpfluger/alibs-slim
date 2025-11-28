@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	r2 "math/rand/v2" // Use math/rand/v2 for IntN (Go 1.22+).
 )
 
 // GenerateSecretKey generates a secure 256-bit (32-byte) random key suitable for FIPS-approved cryptographic uses,
@@ -61,4 +62,36 @@ func InitializeJWTSecretKey(encodedKey string) ([]byte, error) {
 // EncodeJWTSecretKey takes a decoded JWT secret key and returns its base64-encoded string representation.
 func EncodeJWTSecretKey(jwtDecodedKey []byte) (string, error) {
 	return EncodeSecretKey(jwtDecodedKey)
+}
+
+// RandomStrongOneWaySecret generates a secure random secret.
+func RandomStrongOneWaySecret() (string, error) {
+	return RandomStrongOneWayByVariableLength(0, 0)
+}
+
+// RandomStrongOneWayByVariableLength generates a secure random key of variable length between low and high (inclusive).
+// It first generates a fixed 32-byte random key, base64-encodes it (producing 44 characters), then trims to a random length in [low, high].
+// Defaults to low=25, high=37 if low > high or invalid.
+// For FIPS compliance, build with appropriate flags (e.g., GOEXPERIMENT=systemcrypto).
+func RandomStrongOneWayByVariableLength(low, high int) (string, error) {
+	if low > high || low < 1 || high < 1 {
+		low = 25
+		high = 37
+	}
+
+	// Generate 32 random bytes.
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate secret key: %v", err)
+	}
+
+	// Base64 encode (44 characters).
+	encoded := base64.StdEncoding.EncodeToString(key)
+
+	// Pick random length in [low, high].
+	varLen := r2.IntN(high-low+1) + low
+
+	// Trim to varLen.
+	return encoded[:varLen], nil
 }

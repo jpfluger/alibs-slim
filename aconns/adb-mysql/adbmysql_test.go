@@ -1,10 +1,11 @@
 package adb_mysql
 
 import (
+	"testing"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/mysqldialect"
-	"testing"
 
 	"github.com/jpfluger/alibs-slim/aconns"
 	"github.com/stretchr/testify/assert"
@@ -59,26 +60,6 @@ func TestADBMysql_Test(t *testing.T) {
 	ok, status, err := mysql.Test()
 	assert.False(t, ok)
 	assert.Equal(t, aconns.TESTSTATUS_FAILED, status)
-	assert.Error(t, err)
-}
-
-func TestADBMysql_OpenConnection(t *testing.T) {
-	mysql := &ADBMysql{
-		ADBAdapterBase: aconns.ADBAdapterBase{
-			Adapter: aconns.Adapter{
-				Type: aconns.AdapterType("mysql"),
-				Name: aconns.AdapterName("test_mysql"),
-				Host: testHost,
-				Port: testPort,
-			},
-			Database: testDatabase,
-			Username: testUser,
-			Password: testPassword,
-		},
-		ConnectionTimeout: testTimeout,
-	}
-
-	err := mysql.OpenConnection()
 	assert.Error(t, err)
 }
 

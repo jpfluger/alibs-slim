@@ -1,16 +1,18 @@
 package aimage
 
 import (
-	"github.com/jpfluger/alibs-slim/autils"
 	"mime"
 	"strings"
+	"sync" // Added for RWMutex
+
+	"github.com/jpfluger/alibs-slim/autils"
 )
 
 type ExtMimeType struct {
-	Ext        string
-	Mime       string
-	CleanedExt string
-	Tags       []string
+	Ext        string   `json:"ext,omitempty"`
+	Mime       string   `json:"mime,omitempty"`
+	CleanedExt string   `json:"cleanedExt,omitempty"`
+	Tags       []string `json:"tags,omitempty"`
 }
 
 func (emt ExtMimeType) GetCleanedExt() string {
@@ -34,37 +36,48 @@ func (emt ExtMimeType) GetTags() []string {
 	return arr
 }
 
-type ExtMimeTypeMap map[ImageType]ExtMimeType
+type ExtMimeTypeMap struct {
+	sync.RWMutex // Added for thread safety
+	m            map[ImageType]ExtMimeType
+}
 
-func (emap ExtMimeTypeMap) FindExtMime(ext string) *ExtMimeType {
-	emt, exists := emap[ImageType(autils.StripExtensionPrefix(ext))]
+func (emap *ExtMimeTypeMap) FindExtMime(ext string) *ExtMimeType {
+	emap.RLock()
+	defer emap.RUnlock()
+	emt, exists := emap.m[ImageType(autils.StripExtensionPrefix(ext))]
 	if !exists {
 		return nil
 	}
 	return &emt
 }
 
-func (emap ExtMimeTypeMap) FindMime(ext string) string {
-	emt, exists := emap[ImageType(autils.StripExtensionPrefix(ext))]
+func (emap *ExtMimeTypeMap) FindMime(ext string) string {
+	emap.RLock()
+	defer emap.RUnlock()
+	emt, exists := emap.m[ImageType(autils.StripExtensionPrefix(ext))]
 	if !exists {
 		return ""
 	}
 	return emt.Mime
 }
 
-func (emap ExtMimeTypeMap) GetCleanedExt(ext string) string {
-	emt, exists := emap[ImageType(autils.StripExtensionPrefix(ext))]
+func (emap *ExtMimeTypeMap) GetCleanedExt(ext string) string {
+	emap.RLock()
+	defer emap.RUnlock()
+	emt, exists := emap.m[ImageType(autils.StripExtensionPrefix(ext))]
 	if !exists {
 		return ""
 	}
 	return emt.GetCleanedExt()
 }
 
-// customExtMimeTypes holds the map of file extensions to their corresponding MIME types.
-var customExtMimeTypes ExtMimeTypeMap
+// Global instance
+var customExtMimeTypes = &ExtMimeTypeMap{m: make(map[ImageType]ExtMimeType)}
 
 func init() {
-	customExtMimeTypes = ExtMimeTypeMap{
+	customExtMimeTypes.Lock()
+	defer customExtMimeTypes.Unlock()
+	customExtMimeTypes.m = map[ImageType]ExtMimeType{
 		// Images
 		"jpg":  {Ext: "jpg", Mime: "image/jpeg"},
 		"jpeg": {Ext: "jpeg", Mime: "image/jpeg", CleanedExt: "jpg"},
@@ -185,7 +198,9 @@ func SetExtMimeType(ext, mimeType string, tags []string, cleanedExt ...string) {
 		cleaned = autils.StripExtensionPrefix(cleanedExt[0])
 	}
 
-	customExtMimeTypes[ImageType(ext)] = ExtMimeType{
+	customExtMimeTypes.Lock()
+	defer customExtMimeTypes.Unlock()
+	customExtMimeTypes.m[ImageType(ext)] = ExtMimeType{
 		Ext:        ext,
 		Mime:       mimeType,
 		CleanedExt: cleaned,

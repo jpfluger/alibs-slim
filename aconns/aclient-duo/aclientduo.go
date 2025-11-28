@@ -3,18 +3,21 @@ package aclient_duo
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"sync"
+	"time"
+
 	duoapi "github.com/duosecurity/duo_api_golang"
 	"github.com/jpfluger/alibs-slim/aconns"
 	"github.com/jpfluger/alibs-slim/anetwork"
 	"github.com/jpfluger/alibs-slim/atags"
-	"net/url"
-	"sync"
 )
 
 const (
 	ADAPTERTYPE_DUO aconns.AdapterType = "duo"
 )
 
+// AClientDuo represents a Duo client adapter.
 type AClientDuo struct {
 	Type       aconns.AdapterType `json:"type,omitempty"`
 	Name       aconns.AdapterName `json:"name,omitempty"`
@@ -25,7 +28,10 @@ type AClientDuo struct {
 	Parameters atags.TagMapString `json:"parameters,omitempty"`
 
 	duoClient *duoapi.DuoApi
-	mu        sync.RWMutex
+
+	health aconns.HealthCheck
+
+	mu sync.RWMutex
 }
 
 func (a *AClientDuo) GetType() aconns.AdapterType {
@@ -56,43 +62,81 @@ func (a *AClientDuo) GetPort() int {
 	return port
 }
 
+// Validate checks if the AClientDuo is valid.
 func (a *AClientDuo) Validate() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.validate()
 }
 
+// validate checks if the AClientDuo is valid.
 func (a *AClientDuo) validate() error {
 	if a.Type.TrimSpace().IsEmpty() {
+		a.health.Update(aconns.HEALTHSTATUS_VALIDATE_FAILED)
 		return fmt.Errorf("type is empty")
 	}
 	if a.Name.TrimSpace().IsEmpty() {
+		a.health.Update(aconns.HEALTHSTATUS_VALIDATE_FAILED)
 		return fmt.Errorf("name is empty")
 	}
 	if a.IKey == "" || a.SKey == "" || a.ApiHost == "" {
+		a.health.Update(aconns.HEALTHSTATUS_VALIDATE_FAILED)
 		return fmt.Errorf("duo credentials are incomplete")
 	}
 	if !a.Url.IsUrl() {
-		return fmt.Errorf("duo URL is not set")
+		a.health.Update(aconns.HEALTHSTATUS_VALIDATE_FAILED)
+		return fmt.Errorf("invalid URL")
 	}
-	if a.Url.Hostname() == "" {
-		return aconns.ErrHostIsEmpty
-	}
-	if _, err := a.Url.GetPortInt(); err != nil {
-		return err
-	}
+	a.health.Update(aconns.HEALTHSTATUS_HEALTHY)
 	return nil
 }
 
-func (a *AClientDuo) OpenConnection() error {
+// Test attempts to validate the AClientDuo, initialize if necessary, and test the connection.
+func (a *AClientDuo) Test() (bool, aconns.TestStatus, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return a.openConnection()
+	return a.test()
 }
 
-func (a *AClientDuo) openConnection() error {
+func (a *AClientDuo) test() (bool, aconns.TestStatus, error) {
+	if err := a.validate(); err != nil {
+		return false, aconns.TESTSTATUS_FAILED, err
+	}
+
+	if a.duoClient == nil {
+		if err := a.init(); err != nil {
+			a.health.Update(aconns.HEALTHSTATUS_OPEN_FAILED)
+			return false, aconns.TESTSTATUS_FAILED, err
+		}
+	}
+
+	if err := a.testConnection(); err != nil {
+		a.health.Update(aconns.HEALTHSTATUS_PING_FAILED)
+		return false, aconns.TESTSTATUS_FAILED, err
+	}
+
+	a.health.Update(aconns.HEALTHSTATUS_HEALTHY)
+	return true, aconns.TESTSTATUS_INITIALIZED_SUCCESSFUL, nil
+}
+
+// Refresh re-initializes the Duo client.
+func (a *AClientDuo) Refresh() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.duoClient = nil
+	return a.init()
+}
+
+// Init initializes the Duo client.
+func (a *AClientDuo) Init() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.init()
+}
+
+// init is the internal, lock-free version of Init.
+func (a *AClientDuo) init() error {
 	if a.duoClient != nil {
-		// Already initialized
 		return nil
 	}
 
@@ -100,67 +144,48 @@ func (a *AClientDuo) openConnection() error {
 		return err
 	}
 
-	// Create Duo client instance
-	client := duoapi.NewDuoApi(a.IKey, a.SKey, a.ApiHost, a.Name.String())
-	a.duoClient = client
-
+	a.duoClient = duoapi.NewDuoApi(a.IKey, a.SKey, a.ApiHost, "AClientDuo")
 	return nil
 }
 
-func (a *AClientDuo) CloseConnection() error {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	if a.duoClient != nil {
-		// While Duo client has no Close() method, clearing it allows re-init
-		a.duoClient = nil
-	}
-	return nil
-}
-
-func (a *AClientDuo) Test() (bool, aconns.TestStatus, error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
+// testConnection tests the Duo connection by calling the /ping endpoint.
+func (a *AClientDuo) testConnection() error {
 	if a.duoClient == nil {
-		if err := a.openConnection(); err != nil {
-			return false, aconns.TESTSTATUS_FAILED, err
-		}
+		return fmt.Errorf("duo client has not been initialized")
 	}
 
 	_, body, err := a.duoClient.Call("GET", "/auth/v2/ping", nil)
 	if err != nil {
-		return false, aconns.TESTSTATUS_FAILED, err
+		return fmt.Errorf("failed to ping Duo API: %w", err)
 	}
 
-	// Define inline struct to unmarshal into
-	var pingResp struct {
-		duoapi.StatResult
-		Response string `json:"response"`
+	var parsed map[string]interface{}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return fmt.Errorf("failed to parse Duo ping response: %w", err)
 	}
 
-	if err := json.Unmarshal(body, &pingResp); err != nil {
-		return false, aconns.TESTSTATUS_FAILED, fmt.Errorf("failed to parse Duo ping response: %w", err)
+	if stat, ok := parsed["stat"].(string); !ok || stat != "OK" {
+		return fmt.Errorf("Duo ping failed: %v", parsed["message"])
 	}
 
-	if pingResp.Stat != "OK" {
-		msg := "<unknown>"
-		if pingResp.Message != nil {
-			msg = *pingResp.Message
-		}
-		return false, aconns.TESTSTATUS_FAILED, fmt.Errorf("Duo ping failed: %s", msg)
-	}
-
-	if pingResp.Response == "pong" {
-		return true, aconns.TESTSTATUS_INITIALIZED_SUCCESSFUL, nil
-	}
-
-	return false, aconns.TESTSTATUS_FAILED, fmt.Errorf("unexpected Duo ping response: %v", pingResp.Response)
+	return nil
 }
 
-func (a *AClientDuo) GetDuoClient() *duoapi.DuoApi {
+// DuoClient returns the Duo client.
+func (a *AClientDuo) DuoClient() *duoapi.DuoApi {
 	a.mu.RLock()
-	defer a.mu.RUnlock()
+	if a.health.IsHealthy && !a.health.IsStale(5*time.Minute) {
+		defer a.mu.RUnlock()
+		return a.duoClient
+	}
+	a.mu.RUnlock()
+
+	// Upgrade to write lock for refresh
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if _, _, err := a.test(); err != nil {
+		return nil
+	}
 	return a.duoClient
 }
 
@@ -202,9 +227,7 @@ func (a *AClientDuo) Push2FA(username string, overrides atags.TagMapString) (*Du
 		params.Set("device", "auto")
 	}
 
-	a.mu.RLock()
-	duoClient := a.duoClient
-	a.mu.RUnlock()
+	duoClient := a.DuoClient()
 	if duoClient == nil {
 		return nil, fmt.Errorf("duo client has not been initialized")
 	}

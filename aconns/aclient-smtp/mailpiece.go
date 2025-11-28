@@ -2,18 +2,19 @@ package aclient_smtp
 
 import (
 	"fmt"
-	"github.com/jhillyerd/enmime/v2"
-	"net/mail"
 	"strings"
+
+	"github.com/jhillyerd/enmime/v2"
+	"github.com/jpfluger/alibs-slim/aemail"
 )
 
 // MailPiece represents an email with various fields
 type MailPiece struct {
-	From mail.Address `json:"from,omitempty"`
+	From aemail.Address `json:"from,omitempty"`
 
-	To  []mail.Address `json:"to,omitempty"`
-	CC  []mail.Address `json:"cc,omitempty"`
-	BCC []mail.Address `json:"bcc,omitempty"`
+	To  aemail.Addresses `json:"to,omitempty"`
+	CC  aemail.Addresses `json:"cc,omitempty"`
+	BCC aemail.Addresses `json:"bcc,omitempty"`
 
 	AllowEmptySubject bool   `json:"allowEmptySubject,omitempty"`
 	Subject           string `json:"subject,omitempty"`
@@ -47,41 +48,35 @@ func (mp *MailPiece) validateWithBuilder() (bdr enmime.MailBuilder, err error) {
 	}
 
 	// Validate FROM address
-	if _, err = mail.ParseAddress(mp.From.Address); err != nil {
+	if err = mp.From.Validate(); err != nil {
 		return bdr, fmt.Errorf("invalid from address; %v", err)
 	}
-	bdr = bdr.From(mp.From.Name, mp.From.Address)
+	bdr = bdr.From(mp.From.Name, mp.From.Address.String())
 
 	// Validate TO, CC, BCC addresses
 	var canSend bool
 
 	if mp.To != nil && len(mp.To) > 0 {
-		for _, addr := range mp.To {
-			if _, err = mail.ParseAddress(addr.Address); err != nil {
-				return bdr, fmt.Errorf("invalid TO address '%s'; %v", addr.Address, err)
-			}
+		if err = mp.To.Validate(); err != nil {
+			return bdr, fmt.Errorf("invalid TO addresses; %v", err)
 		}
-		bdr = bdr.ToAddrs(mp.To)
+		bdr = bdr.ToAddrs(mp.To.ToMailAddresses())
 		canSend = true
 	}
 
 	if mp.CC != nil && len(mp.CC) > 0 {
-		for _, addr := range mp.CC {
-			if _, err := mail.ParseAddress(addr.Address); err != nil {
-				return bdr, fmt.Errorf("invalid CC address '%s'; %v", addr.Address, err)
-			}
+		if err = mp.CC.Validate(); err != nil {
+			return bdr, fmt.Errorf("invalid CC addresses; %v", err)
 		}
-		bdr = bdr.CCAddrs(mp.CC)
+		bdr = bdr.CCAddrs(mp.CC.ToMailAddresses())
 		canSend = true
 	}
 
 	if mp.BCC != nil && len(mp.BCC) > 0 {
-		for _, addr := range mp.BCC {
-			if _, err := mail.ParseAddress(addr.Address); err != nil {
-				return bdr, fmt.Errorf("invalid BCC address '%s'; %v", addr.Address, err)
-			}
+		if err = mp.BCC.Validate(); err != nil {
+			return bdr, fmt.Errorf("invalid BCC addresses; %v", err)
 		}
-		bdr = bdr.BCCAddrs(mp.BCC)
+		bdr = bdr.BCCAddrs(mp.BCC.ToMailAddresses())
 		canSend = true
 	}
 
@@ -186,9 +181,12 @@ func (mp *MailPiece) Send(smtpAuth ISMTPAuth) error {
 
 // Clone creates a deep copy of the MailPiece object, including all nested fields.
 func (mp *MailPiece) Clone() *MailPiece {
+	if mp == nil {
+		return nil
+	}
 	// Create a new MailPiece and copy over simple fields
 	clone := &MailPiece{
-		From:              mp.From,
+		From:              mp.From, // Value type, shallow copy is fine
 		AllowEmptySubject: mp.AllowEmptySubject,
 		Subject:           mp.Subject,
 		AllowNoTextHMTL:   mp.AllowNoTextHMTL,
@@ -197,21 +195,10 @@ func (mp *MailPiece) Clone() *MailPiece {
 		AllowAttachments:  mp.AllowAttachments,
 	}
 
-	// Deep copy To, CC, and BCC slices only if they're not nil
-	if mp.To != nil && len(mp.To) > 0 {
-		clone.To = make([]mail.Address, len(mp.To))
-		copy(clone.To, mp.To)
-	}
-
-	if mp.CC != nil && len(mp.CC) > 0 {
-		clone.CC = make([]mail.Address, len(mp.CC))
-		copy(clone.CC, mp.CC)
-	}
-
-	if mp.BCC != nil && len(mp.BCC) > 0 {
-		clone.BCC = make([]mail.Address, len(mp.BCC))
-		copy(clone.BCC, mp.BCC)
-	}
+	// Deep copy To, CC, and BCC slices
+	clone.To = mp.To.Clone()
+	clone.CC = mp.CC.Clone()
+	clone.BCC = mp.BCC.Clone()
 
 	// Deep copy Attachments and Inlines only if they're not nil
 	if mp.Attachments != nil {

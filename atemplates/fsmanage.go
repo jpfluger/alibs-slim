@@ -146,3 +146,25 @@ func MustFSSnippetRenderText(name string, data interface{}) string {
 	}
 	return s
 }
+
+// GetFSSnippetHTMLIsLoaded checks if the specified HTML snippet is loaded.
+// It uses a read lock for thread-safe access and returns an error if SnippetsHTML is not initialized or the snippet is not found.
+func (tm *FSManage) GetFSSnippetHTMLIsLoaded(name string) error {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	if tm.SnippetsHTML == nil {
+		return fmt.Errorf("SnippetsHTML not initialized")
+	}
+	return tm.SnippetsHTML.IsLoaded(name)
+}
+
+// GetFSSnippetTextIsLoaded checks if the specified text snippet is loaded.
+// It uses a read lock for thread-safe access and returns an error if SnippetsText is not initialized or the snippet is not found.
+func (tm *FSManage) GetFSSnippetTextIsLoaded(name string) error {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	if tm.SnippetsText == nil {
+		return fmt.Errorf("SnippetsText not initialized")
+	}
+	return tm.SnippetsText.IsLoaded(name)
+}

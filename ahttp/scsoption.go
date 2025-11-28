@@ -61,13 +61,40 @@ type SCSOptions struct {
 	HashTokenInStore bool `json:"hashTokenInStore"`
 }
 
+// Validate performs validation checks on the SCSOptions configuration.
+// It computes effective values for timeouts and ensures that the lifetime exceeds the idle timeout if set.
+// Returns an error if validation fails.
+func (ss *SCSOptions) Validate() error {
+	if ss == nil {
+		return fmt.Errorf("SCSOptions is nil")
+	}
+
+	// Compute effective values without mutating the struct.
+	effectiveIdle := ss.IdleTimeoutMinutes
+	if effectiveIdle < 0 {
+		effectiveIdle = 0
+	}
+
+	effectiveLifetime := ss.LifetimeMinutes
+	if effectiveLifetime <= 0 {
+		effectiveLifetime = 1440
+	}
+
+	// Basic validation: Lifetime should exceed IdleTimeout if set.
+	if effectiveIdle > 0 && effectiveLifetime <= effectiveIdle {
+		return fmt.Errorf("effective LifetimeMinutes (%d) must exceed IdleTimeoutMinutes (%d) if set", effectiveLifetime, effectiveIdle)
+	}
+
+	return nil
+}
+
 // Initialize configures a new scs.SessionManager based on SCSOptions settings and an scs.Store for session storage.
 // Registers types with gob for encoding/decoding session data if needed.
 // If addToGlobalSCS is true, then the scs.SessionManager is auto-added to scsInstance.
 // Returns a configured session manager or an error if initialization fails.
 func (ss *SCSOptions) Initialize(scsStore scs.Store, gobRegister []interface{}, addToGlobalSCS bool) (*scs.SessionManager, error) {
-	if ss == nil {
-		return nil, fmt.Errorf("SCSOptions is nil")
+	if err := ss.Validate(); err != nil {
+		return nil, err
 	}
 
 	if scsStore == nil {
@@ -90,18 +117,24 @@ func (ss *SCSOptions) Initialize(scsStore scs.Store, gobRegister []interface{}, 
 		lifetimeMinutes = 1440 // Default: 24 hours
 	}
 
-	// Basic validation: Lifetime should exceed IdleTimeout if set.
-	if idleTimeoutMinutes > 0 && lifetimeMinutes <= idleTimeoutMinutes {
-		return nil, fmt.Errorf("LifetimeMinutes (%d) must exceed IdleTimeoutMinutes (%d) if set", lifetimeMinutes, idleTimeoutMinutes)
-	}
-
 	// Initialize the session manager with the provided scs store.
 	sessionManager := scs.New()
 	sessionManager.Store = scsStore
 
-	// Register types with gob for use in session data encoding.
+	// Register types with gob for use in session data encoding, ignoring duplicate registration panics.
 	for _, gobType := range gobRegister {
-		gob.Register(gobType)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					if strings.Contains(fmt.Sprintln(r), "gob: registering duplicate type") {
+						// Ignore duplicate registration panic.
+					} else {
+						panic(r) // Re-panic for other errors.
+					}
+				}
+			}()
+			gob.Register(gobType)
+		}()
 	}
 
 	// Set session cookie attributes based on SCSOptions configuration.

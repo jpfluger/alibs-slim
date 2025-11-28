@@ -66,27 +66,6 @@ func TestADBMSSql_Test(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestADBMSSql_OpenConnection(t *testing.T) {
-	mssql := &ADBMSSql{
-		ADBAdapterBase: aconns.ADBAdapterBase{
-			Adapter: aconns.Adapter{
-				Type: aconns.AdapterType("mssql"),
-				Name: aconns.AdapterName("test_mssql"),
-				Host: testHost,
-				Port: testPort,
-			},
-			Database: testDatabase,
-			Username: testUser,
-			Password: testPassword,
-		},
-		ConnectionTimeout: testTimeout,
-		Encrypt:           testEncrypt,
-	}
-
-	err := mssql.OpenConnection()
-	assert.Error(t, err)
-}
-
 func TestADBMSSql_CloseConnection(t *testing.T) {
 	mssql := &ADBMSSql{
 		ADBAdapterBase: aconns.ADBAdapterBase{

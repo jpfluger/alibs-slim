@@ -110,6 +110,7 @@ func (apm *AppPathMap) ValidateWithOption(dirRoot string) error {
 
 // EnsureDirs ensures that all directories in the AppPathMap exist.
 // It resolves relative paths using dirRoot before creation.
+// Skips creation for paths that are not under dirRoot (if dirRoot is set).
 func (apm *AppPathMap) EnsureDirs(dirRoot string) error {
 	if dirRoot == "" {
 		if rootPath, exists := (*apm)[DIR_ROOT]; exists {
@@ -133,12 +134,58 @@ func (apm *AppPathMap) EnsureDirs(dirRoot string) error {
 			(*apm)[key] = val
 		}
 
+		// Skip if not under dirRoot
+		if dirRoot != "" {
+			under, err := IsUnderRoot(dirRoot, val)
+			if err != nil {
+				return fmt.Errorf("failed to check if %s is under root: %w", val, err)
+			}
+			if !under {
+				continue // Skip creation for paths outside DIR_ROOT
+			}
+		}
+
 		if _, err := os.Stat(val); os.IsNotExist(err) {
 			if err = os.MkdirAll(val, PATH_CHMOD_DIR_LIMIT); err != nil {
 				return fmt.Errorf("failed to create directory %s: %v", val, err)
 			}
 		}
 	}
+	return nil
+}
+
+// AutoSetupIfRootEmpty automatically sets up default paths and creates directories if DIR_ROOT is empty.
+// It merges the provided defaults into the current AppPathMap (overrides win), resolves relative paths,
+// and ensures all directories are created. If DIR_ROOT is not empty or does not exist, it skips setup.
+// Defaults should use relative paths (e.g., "data" for DIR_DATA, "data/logs" for DIR_LOGS).
+func (apm *AppPathMap) AutoSetupIfRootEmpty(defaults AppPathMap) error {
+	dirRoot := apm.GetPath(DIR_ROOT)
+	if dirRoot == "" {
+		return fmt.Errorf("DIR_ROOT is not set")
+	}
+
+	// Check if DIR_ROOT is empty
+	isEmpty, err := IsDirEmpty(dirRoot)
+	if err != nil {
+		return err
+	}
+	if !isEmpty {
+		return nil // Not empty, skip auto-setup
+	}
+
+	// Merge defaults, resolving relatives to DIR_ROOT
+	merged := apm.MergeAbs(dirRoot, defaults)
+
+	// Update the current map with the merged values
+	for k, v := range merged {
+		(*apm)[k] = v
+	}
+
+	// Ensure all directories are created
+	if err := apm.EnsureDirs(dirRoot); err != nil {
+		return fmt.Errorf("failed to ensure directories during auto-setup: %w", err)
+	}
+
 	return nil
 }
 
@@ -250,4 +297,25 @@ func (base AppPathMap) MergeAbs(baseDir string, overrides ...AppPathMap) AppPath
 		}
 	}
 	return merged
+}
+
+// ResolveAllRelatives resolves all relative paths in the AppPathMap to absolute paths
+// using DIR_ROOT as the base directory. It mutates the map in place by updating
+// relative path values to their absolute equivalents. If DIR_ROOT is not set, it
+// returns an error. Empty or already absolute paths are skipped without changes.
+func (apm *AppPathMap) ResolveAllRelatives() error {
+	baseDir := apm.GetPath(DIR_ROOT)
+	if baseDir == "" {
+		return fmt.Errorf("DIR_ROOT is required to resolve relative paths")
+	}
+	for key, val := range *apm {
+		// Skip if the value is empty or already absolute
+		if val == "" || filepath.IsAbs(val) {
+			continue
+		}
+		// Resolve relative path
+		absPath := filepath.Join(baseDir, val)
+		(*apm)[key] = filepath.Clean(absPath)
+	}
+	return nil
 }

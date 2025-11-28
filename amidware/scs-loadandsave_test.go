@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/jpfluger/alibs-slim/asessions"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	"github.com/jpfluger/alibs-slim/asessions"
 )
 
 func init() {
-	//	// Register the session types with gob for serialization.
+	// Register the session types with gob for serialization.
 	gob.Register(asessions.UserSessionPerm{})
 }
 

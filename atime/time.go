@@ -1,10 +1,12 @@
 package atime
 
 import (
-	"github.com/dustin/go-humanize"
-	"github.com/teambition/rrule-go"
+	"os"
 	"sort"
 	"time"
+
+	"github.com/dustin/go-humanize"
+	"github.com/teambition/rrule-go"
 )
 
 // EnsureDateTime ensures that the input is a time.Time object.
@@ -58,6 +60,41 @@ func GetNowPointer() *time.Time {
 func GetNowUTCPointer() *time.Time {
 	ts := time.Now().UTC()
 	return &ts
+}
+
+// CurrentDateUTC returns the current date in UTC, truncated to midnight (00:00:00).
+// This ensures a clean date-only value without time elements, suitable for date comparisons,
+// template rendering, or storage in date-only fields while maintaining UTC consistency.
+func CurrentDateUTC() time.Time {
+	now := time.Now().UTC()
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+// CurrentDateLocal returns the current date truncated to midnight in the specified timezone (IANA format, e.g., "America/Chicago").
+// If timeZoneID is empty, it falls back to the APP_LOCAL_TZ env var (default "America/Chicago").
+// If loading fails, it falls back to GetSystemTimeZone(), then UTC as a last resort.
+// This ensures a date-only value aligned with local time, stored consistently in UTC when normalized.
+func CurrentDateLocal(timeZoneID string) time.Time {
+	if timeZoneID == "" {
+		timeZoneID = os.Getenv("APP_LOCAL_TZ")
+		if timeZoneID == "" {
+			timeZoneID = "America/Chicago" // App default
+		}
+	}
+
+	loc, err := time.LoadLocation(timeZoneID)
+	if err != nil {
+		// Fallback to system TZ on error
+		sysTZ := GetSystemTimeZone()
+		loc, err = time.LoadLocation(sysTZ)
+		if err != nil {
+			// Ultimate fallback to UTC
+			return CurrentDateUTC()
+		}
+	}
+
+	now := time.Now().In(loc)
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 }
 
 // FormatDateTime formats a time.Time object according to the provided layout.

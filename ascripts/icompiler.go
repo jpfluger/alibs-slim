@@ -31,6 +31,8 @@ func returnScriptCompiler(typeName string) (reflect.Type, error) {
 		rtype = reflect.TypeOf(CompilerCSS{}) // Example compiler for CSS.
 	case SCRIPTTYPE_TEXT.String():
 		rtype = reflect.TypeOf(CompilerText{}) // Example compiler for plain text.
+	case SCRIPTTYPE_MARKDOWN_HTML.String():
+		rtype = reflect.TypeOf(CompilerMarkdownHtml{}) // Example compiler for Markdown Html (potentially unsafe).
 	}
 	return rtype, nil
 }

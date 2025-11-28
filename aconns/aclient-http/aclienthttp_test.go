@@ -20,6 +20,10 @@ type MockXML struct {
 func setupEchoServer() *echo.Echo {
 	e := echo.New()
 
+	e.HEAD("/", func(c echo.Context) error {
+		return c.NoContent(http.StatusOK)
+	})
+
 	e.GET("/json", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "Hello, JSON!"})
 	})

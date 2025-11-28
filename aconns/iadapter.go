@@ -8,6 +8,9 @@ type IAdapter interface {
 	GetPort() int
 	Validate() error
 	Test() (ok bool, testStatus TestStatus, err error)
+	Refresh() error          // Reconnect logic
+	GetHealth() *HealthCheck // Expose health
+	IsHealthy() bool         // Quick health check
 }
 
 // IAdapters is a slice of IAdapter.

@@ -5,14 +5,15 @@ import (
 	"strings"
 )
 
+// DockerManager manages Docker Compose services.
 type DockerManager struct {
-	WorkingDir    string
-	DCFile        string // Path to the Docker Compose file
-	Project       string // Project used for Docker services
-	EnvFile       string // Path to environment file (optional)
-	DisplayStdErr bool   // Option to display standard error
-	HideStdOut    bool   // Option to hide standard output
-	DoPrint       bool
+	WorkingDir    string `json:"workingDir"`
+	DCFile        string `json:"dcFile"`        // Path to the Docker Compose file
+	Project       string `json:"project"`       // Project used for Docker services
+	EnvFile       string `json:"envFile"`       // Path to environment file (optional)
+	DisplayStdErr bool   `json:"displayStdErr"` // Option to display standard error
+	HideStdOut    bool   `json:"hideStdOut"`    // Option to hide standard output
+	DoPrint       bool   `json:"doPrint"`       // Option to enable printing of errors
 }
 
 // StartDocker starts the Docker Compose services.
@@ -31,8 +32,6 @@ func (dm *DockerManager) StartDocker() error {
 		HideStdOut: dm.HideStdOut,
 		WorkingDir: dm.WorkingDir,
 		Parameters: params,
-		//Parameters: []string{"-f", dm.DCFile, "-p", dm.Project, "up", "-d"},
-		//Command:    fmt.Sprintf("-f %s -p %s up -d", dm.DCFile, dm.Project),
 	}
 	if _, stdErr, err := cmd.RunCommand(); err != nil {
 		return fmt.Errorf("failed to start Docker Compose services: %v", err)
@@ -47,12 +46,19 @@ func (dm *DockerManager) StartDocker() error {
 // StopDocker stops and removes the Docker Compose services.
 func (dm *DockerManager) StopDocker() error {
 	fmt.Println("Stopping Docker services...")
+
+	params := []string{"-f", dm.DCFile, "-p", dm.Project}
+	dm.EnvFile = strings.TrimSpace(dm.EnvFile)
+	if dm.EnvFile != "" {
+		params = append(params, "--env-file", dm.EnvFile)
+	}
+	params = append(params, "down", "-v")
+
 	cmd := ShellCommand{
 		Type:       SHELLTYPE_DCOMPOSE,
 		HideStdOut: dm.HideStdOut,
 		WorkingDir: dm.WorkingDir,
-		Parameters: []string{"-f", dm.DCFile, "-p", dm.Project, "down", "-v"},
-		//Command:    fmt.Sprintf("-f %s -p %s down -v", dm.DCFile, dm.Project),
+		Parameters: params,
 	}
 	if _, stdErr, err := cmd.RunCommand(); err != nil {
 		return fmt.Errorf("failed to stop Docker Compose services: %v", err)
@@ -70,9 +76,7 @@ func (dm *DockerManager) IsDockerRunning() (bool, error) {
 		Type:       SHELLTYPE_DOCKER,
 		HideStdOut: dm.HideStdOut,
 		WorkingDir: dm.WorkingDir,
-		//Command:    fmt.Sprintf("ps -a -q --filter name=%s*", dm.Project),
-		Command: "ps",
-		//Parameters: []string{"ps", "-a", "-q", "--filter", fmt.Sprintf("name=%s*", dm.Project)},
+		Command:    "ps",
 		Parameters: []string{"-a", "-q", "--filter", fmt.Sprintf("name=%s*", dm.Project)},
 	}
 	stdOut, stdErr, err := cmd.RunCommand()

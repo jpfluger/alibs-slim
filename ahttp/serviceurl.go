@@ -21,7 +21,7 @@ type ServiceUrl struct {
 
 	// CertStorage is an optional edge-case scenario where its expected
 	// the certs are embedded into the ServiceUrl.
-	CertStorage *anetwork.CertStorage `json:"certStorage,omitempty"`
+	certStorage *anetwork.CertStorage // Private field for CertStorage.
 
 	u        *url.URL // Parsed URL object for internal use.
 	isTLS    bool     // Indicates if the service uses HTTPS (TLS).
@@ -40,6 +40,16 @@ func (su *ServiceUrl) GetPublicUrl() *url.URL {
 // GetIsTLS indicates whether the service is using HTTPS (TLS).
 func (su *ServiceUrl) GetIsTLS() bool {
 	return su.isTLS
+}
+
+// GetCertStorage returns the CertStorage.
+func (su *ServiceUrl) GetCertStorage() *anetwork.CertStorage {
+	return su.certStorage
+}
+
+// SetCertStorage sets the CertStorage.
+func (su *ServiceUrl) SetCertStorage(cs *anetwork.CertStorage) {
+	su.certStorage = cs
 }
 
 // Validate checks the ServiceUrl configuration for errors, including:
@@ -78,8 +88,8 @@ func (su *ServiceUrl) Validate() error {
 
 	// If HTTPS is used, validate certificate and key (files or storage).
 	if su.isTLS {
-		if su.CertStorage != nil {
-			if _, err = su.CertStorage.ToTLSCertificate(); err != nil {
+		if su.certStorage != nil {
+			if _, err = su.certStorage.ToTLSCertificate(); err != nil {
 				return fmt.Errorf("invalid cert storage: %v", err)
 			}
 			// CertStorage is valid, so skip file checks.
@@ -138,14 +148,15 @@ func (su *ServiceUrl) GetKeyFile() string {
 // It copies all fields, including cloning the internal URL and CertStorage if set.
 func (su *ServiceUrl) Clone() *ServiceUrl {
 	clone := &ServiceUrl{
-		ListenPort: su.ListenPort,
-		PublicUrl:  su.PublicUrl,
-		CertFile:   su.CertFile,
-		KeyFile:    su.KeyFile,
-		dirRoot:    su.dirRoot,
-		certFile:   su.certFile,
-		keyFile:    su.keyFile,
-		isTLS:      su.isTLS,
+		ListenPort:  su.ListenPort,
+		PublicUrl:   su.PublicUrl,
+		CertFile:    su.CertFile,
+		KeyFile:     su.KeyFile,
+		dirRoot:     su.dirRoot,
+		certFile:    su.certFile,
+		keyFile:     su.keyFile,
+		isTLS:       su.isTLS,
+		certStorage: nil,
 	}
 
 	if su.u != nil {
@@ -154,10 +165,10 @@ func (su *ServiceUrl) Clone() *ServiceUrl {
 		}
 	}
 
-	if su.CertStorage != nil {
+	if su.certStorage != nil {
 		// Assuming CertStorage has a Clone method; if not, implement deep copy logic here.
-		// If CertStorage is immutable or shallow copy is safe, use *su.CertStorage.
-		clone.CertStorage = su.CertStorage.Clone() // Replace with appropriate copy if no Clone exists.
+		// If CertStorage is immutable or shallow copy is safe, use *su.certStorage.
+		clone.certStorage = su.certStorage.Clone() // Replace with appropriate copy if no Clone exists.
 	}
 
 	return clone
@@ -198,8 +209,9 @@ func NewServiceUrl(opts *ServiceUrlOpts) (*ServiceUrl, error) {
 		}
 	} else {
 		su = &ServiceUrl{
-			ListenPort: 0, // Will be set below.
-			PublicUrl:  "",
+			ListenPort:  0, // Will be set below.
+			PublicUrl:   "",
+			certStorage: nil,
 		}
 	}
 
@@ -229,7 +241,7 @@ func NewServiceUrl(opts *ServiceUrlOpts) (*ServiceUrl, error) {
 	}
 
 	// Handle certs if required and not already set.
-	if opts.RequireCerts && (su.CertFile == "" && su.KeyFile == "" && su.CertStorage == nil) {
+	if opts.RequireCerts && (su.CertFile == "" && su.KeyFile == "" && su.certStorage == nil) {
 		// Use provided SSOpts or fallback to defaults.
 		ssOpts := opts.SSOpts
 		if ssOpts == nil {
@@ -268,17 +280,17 @@ func NewServiceUrl(opts *ServiceUrlOpts) (*ServiceUrl, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to load cert into storage: %v", err)
 			}
-			su.CertStorage = certStorage
+			su.certStorage = certStorage
 		}
 	}
 
 	// New check: If UseCertStorage is true but CertStorage is nil, load from files if available.
-	if opts.UseCertStorage && su.CertStorage == nil && su.CertFile != "" && su.KeyFile != "" {
+	if opts.UseCertStorage && su.certStorage == nil && su.CertFile != "" && su.KeyFile != "" {
 		certStorage, err := anetwork.NewCertStorageByFile(su.CertFile, su.KeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load cert from files into storage: %v", err)
 		}
-		su.CertStorage = certStorage
+		su.certStorage = certStorage
 	}
 
 	// Final validation.

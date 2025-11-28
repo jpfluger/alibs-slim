@@ -1,12 +1,13 @@
 package ascripts
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/jpfluger/alibs-slim/autils"
 	"os"
 	"path"
 	"strings"
 	"testing"
+
+	"github.com/jpfluger/alibs-slim/autils"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestScriptables_A tests the rendering of Scriptable objects with provided data.
@@ -97,6 +98,25 @@ func TestMarkdownSample(t *testing.T) {
 	assert.NoError(t, err, "Rendering failed for file %s", filePath)
 
 	filePathControl := path.Join(wd, "test-data/sample-test-output.html")
+	control, err := os.ReadFile(filePathControl)
+	assert.NoError(t, err, "Reading control file failed for file %s", filePathControl)
+	assert.Equal(t, strings.TrimSpace(string(control)), strings.TrimSpace(output), "Rendered content does not match expected for file %s", filePathControl)
+}
+
+// TestMarkdownHtmlSample tests the creation of the test-data/samples.mdh file.
+func TestMarkdownHtmlSample(t *testing.T) {
+	// Get the current working directory.
+	wd, err := os.Getwd()
+	assert.NoError(t, err, "Getting current working directory failed")
+
+	filePath := path.Join(wd, "test-data/samples.mdh")
+	scriptable, err := NewScriptableFromPath(filePath)
+	assert.NoError(t, err, "Creating Scriptable from path failed for file %s", filePath)
+
+	output, err := scriptable.Render(nil)
+	assert.NoError(t, err, "Rendering failed for file %s", filePath)
+
+	filePathControl := path.Join(wd, "test-data/sample-test-html-output.html")
 	control, err := os.ReadFile(filePathControl)
 	assert.NoError(t, err, "Reading control file failed for file %s", filePathControl)
 	assert.Equal(t, strings.TrimSpace(string(control)), strings.TrimSpace(output), "Rendered content does not match expected for file %s", filePathControl)

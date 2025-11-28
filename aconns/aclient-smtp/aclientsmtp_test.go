@@ -1,10 +1,11 @@
 package aclient_smtp
 
 import (
-	"github.com/jpfluger/alibs-slim/aconns"
-	"github.com/stretchr/testify/assert"
-	"net/mail"
 	"testing"
+
+	"github.com/jpfluger/alibs-slim/aconns"
+	"github.com/jpfluger/alibs-slim/aemail"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAClientSMTP_Validate(t *testing.T) {
@@ -116,20 +117,20 @@ func TestAClientSMTP_CertificateConfigurations(t *testing.T) {
 			expectedToPass: true,
 		},
 		//{
-		//	name:           "SMTP with Valid TLS",
-		//	host:           "testmail.example.com",
-		//	port:           1465,
-		//	dialMode:       DIALMODE_TLS,
-		//	insecure:       false,
-		//	expectedToPass: true,
+		// name:           "SMTP with Valid TLS",
+		// host:           "testmail.example.com",
+		// port:           1465,
+		// dialMode:       DIALMODE_TLS,
+		// insecure:       false,
+		// expectedToPass: true,
 		//},
 		//{
-		//	name:           "SMTP with Self-Signed TLS (Insecure)",
-		//	host:           "localhost",
-		//	port:           1565,
-		//	dialMode:       DIALMODE_TLS,
-		//	insecure:       true,
-		//	expectedToPass: true,
+		// name:           "SMTP with Self-Signed TLS (Insecure)",
+		// host:           "localhost",
+		// port:           1565,
+		// dialMode:       DIALMODE_TLS,
+		// insecure:       true,
+		// expectedToPass: true,
 		//},
 		{
 			name:           "SMTP with Self-Signed TLS (Strict)",
@@ -140,20 +141,20 @@ func TestAClientSMTP_CertificateConfigurations(t *testing.T) {
 			expectedToPass: false,
 		},
 		//{
-		//	name:           "SMTP with Valid STARTTLS",
-		//	host:           "testmail.example.com",
-		//	port:           1587,
-		//	dialMode:       DIALMODE_STARTTLS,
-		//	insecure:       false,
-		//	expectedToPass: true,
+		// name:           "SMTP with Valid STARTTLS",
+		// host:           "testmail.example.com",
+		// port:           1587,
+		// dialMode:       DIALMODE_STARTTLS,
+		// insecure:       false,
+		// expectedToPass: true,
 		//},
 		//{
-		//	name:           "SMTP with Self-Signed STARTTLS (Insecure)",
-		//	host:           "localhost",
-		//	port:           1687,
-		//	dialMode:       DIALMODE_STARTTLS,
-		//	insecure:       true,
-		//	expectedToPass: true,
+		// name:           "SMTP with Self-Signed STARTTLS (Insecure)",
+		// host:           "localhost",
+		// port:           1687,
+		// dialMode:       DIALMODE_STARTTLS,
+		// insecure:       true,
+		// expectedToPass: true,
 		//},
 		{
 			name:           "SMTP with Self-Signed STARTTLS (Strict)",
@@ -201,17 +202,19 @@ func TestAClientSMTP_CertificateConfigurations(t *testing.T) {
 			// REMEMBER!
 			// Prior to running tests, start `mailhog`, which is imperfect due to TLS errors.
 			// docker run -d --name mailhog -p 1025:1025 -p 8025:8025 mailhog/mailhog
-			err := client.OpenConnection()
+			ok, _, err := client.Test()
 			if tc.expectedToPass {
-				assert.NoError(t, err, "OpenConnection should succeed for '%s'", tc.name)
+				assert.True(t, ok, "Test should succeed for '%s'", tc.name)
+				assert.NoError(t, err, "Test should succeed for '%s'", tc.name)
 				assert.True(t, client.HasInitialized(), "Client should be initialized for '%s'", tc.name)
 			} else {
-				assert.Error(t, err, "OpenConnection should fail for '%s'", tc.name)
+				assert.False(t, ok, "Test should fail for '%s'", tc.name)
+				assert.Error(t, err, "Test should fail for '%s'", tc.name)
 			}
 
 			mailPiece := &MailPiece{
-				From:    mail.Address{Address: "sender@example.com"},
-				To:      []mail.Address{{Address: "recipient@example.com"}},
+				From:    aemail.Address{Address: "sender@example.com"},
+				To:      aemail.Addresses{aemail.Address{Address: "recipient@example.com"}},
 				Subject: "Test Email",
 				Text:    "This is a test email sent to MailHog.",
 			}

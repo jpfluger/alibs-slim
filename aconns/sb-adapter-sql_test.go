@@ -17,7 +17,12 @@ type MockSBAdapter struct {
 	database    string
 	username    string
 	password    string
+	healthcheck HealthCheck
 }
+
+func (m *MockSBAdapter) Refresh() error { return nil }
+
+func (m *MockSBAdapter) GetHealth() *HealthCheck { return NewHealthCheck(HEALTHSTATUS_HEALTHY) }
 
 func (m *MockSBAdapter) GetType() AdapterType {
 	return m.adapterType
@@ -45,6 +50,10 @@ func (m *MockSBAdapter) GetUsername() string {
 
 func (m *MockSBAdapter) GetPassword() string {
 	return m.password
+}
+
+func (m *MockSBAdapter) IsHealthy() bool {
+	return m.healthcheck.IsHealthy
 }
 
 func (m *MockSBAdapter) Validate() error {

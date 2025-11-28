@@ -39,7 +39,7 @@ func (c *CompilerMarkdown) Render(body string, params ...interface{}) (string, e
 			),
 			goldmark.WithRendererOptions(
 				html.WithHardWraps(), // Use hard wraps.
-				html.WithUnsafe(),    // Added for unsafe HTML: Enables raw HTML rendering.
+				//html.WithUnsafe(),    // Added for unsafe HTML: Enables raw HTML rendering.
 				// html.WithXHTML(), // Uncomment to enable XHTML output.
 			),
 		)

@@ -1,16 +1,42 @@
 package aclient_smtp
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
-var appEmailPropertyData *EmailPropertyData
+var (
+	appEmailPropertyDataMu sync.RWMutex
+	appEmailPropertyData   *EmailPropertyData
+)
 
+// SetEmailPropertyData sets the global EmailPropertyData.
+// It is thread-safe and allows setting only once; subsequent calls are ignored.
+// For reinitialization in tests or dynamic apps, consider a separate Reset function if needed.
 func SetEmailPropertyData(e *EmailPropertyData) {
-	if appEmailPropertyData != nil {
-		panic("appEmailPropertyData already initialized")
-	}
+	appEmailPropertyDataMu.Lock()
+	defer appEmailPropertyDataMu.Unlock()
 	appEmailPropertyData = e
 }
 
+func EMAILPROPERTYDATA() *EmailPropertyData {
+	return getAppEmailPropertyData()
+}
+
+// getAppEmailPropertyData returns a clone of the global EmailPropertyData.
+// It is thread-safe for concurrent reads.
+func getAppEmailPropertyData() *EmailPropertyData {
+	appEmailPropertyDataMu.RLock()
+	defer appEmailPropertyDataMu.RUnlock()
+	if appEmailPropertyData == nil {
+		return nil
+	}
+	return appEmailPropertyData.Clone()
+}
+
+// NewEmailPropertyData creates a new EmailPropertyData, merging in global app defaults.
+// It uses the provided values and fills in missing ones from the global appEmailPropertyData.
+// This ensures consistency across emails without hardcoding.
 func NewEmailPropertyData(username string, clickLink string, expirationTime time.Time, orgContactName string) *EmailPropertyData {
 	myData := &EmailPropertyData{
 		Username:       username,
@@ -18,10 +44,28 @@ func NewEmailPropertyData(username string, clickLink string, expirationTime time
 		ExpirationTime: expirationTime,
 		OrgContactName: orgContactName,
 	}
-	myData.AppName = appEmailPropertyData.AppName
-	myData.PublicUrl = appEmailPropertyData.PublicUrl
-	myData.OrgName = appEmailPropertyData.OrgName
+	globalData := getAppEmailPropertyData()
+	if globalData != nil {
+		globalData.MergeTo(myData)
+	}
 	return myData
+}
+
+// NewEmailPropertyDataFromData creates a new EmailPropertyData by merging global defaults into the provided overrideData.
+// If overrideData is nil, it returns a clone of the global data (or an empty struct if no global is set).
+// This is useful for scenarios where overrides take precedence but globals fill in gaps.
+func NewEmailPropertyDataFromData(overrideData *EmailPropertyData) *EmailPropertyData {
+	globalData := getAppEmailPropertyData()
+	if overrideData == nil {
+		if globalData == nil {
+			return &EmailPropertyData{}
+		}
+		return globalData
+	}
+	if globalData != nil {
+		globalData.MergeTo(overrideData)
+	}
+	return overrideData
 }
 
 // EmailPropertyData defines common placeholders used in email templates.
@@ -60,5 +104,43 @@ func (e *EmailPropertyData) MergeTo(data *EmailPropertyData) {
 	}
 	if data.OrgName == "" {
 		data.OrgName = e.OrgName
+	}
+	if data.OrgContactName == "" {
+		data.OrgContactName = e.OrgContactName
+	}
+}
+
+// Clone returns a deep copy of the EmailPropertyData.
+// Since all fields are value types (strings and time.Time), a shallow copy suffices.
+func (e *EmailPropertyData) Clone() *EmailPropertyData {
+	if e == nil {
+		return nil
+	}
+	return &EmailPropertyData{
+		Username:       e.Username,
+		AppName:        e.AppName,
+		PublicUrl:      e.PublicUrl,
+		ClickLink:      e.ClickLink,
+		ExpirationTime: e.ExpirationTime,
+		OrgName:        e.OrgName,
+		OrgContactName: e.OrgContactName,
+	}
+}
+
+// EmailPropertyDataContent extends EmailPropertyData with additional ContentText and ContentHTML fields.
+// It is useful for email bodies that require custom content alongside property data, supporting both text and HTML variants.
+type EmailPropertyDataContent struct {
+	EmailPropertyData
+	ContentText string `json:"contentText"`
+	ContentHTML string `json:"contentHTML"`
+}
+
+// NewEmailPropertyDataContent creates a new EmailPropertyDataContent.
+// It merges global defaults into the overrideData (via NewEmailPropertyDataFromData) and sets the ContentText and ContentHTML.
+func NewEmailPropertyDataContent(overrideData *EmailPropertyData, contentText string, contentHTML string) *EmailPropertyDataContent {
+	return &EmailPropertyDataContent{
+		EmailPropertyData: *NewEmailPropertyDataFromData(overrideData),
+		ContentText:       contentText,
+		ContentHTML:       contentHTML,
 	}
 }

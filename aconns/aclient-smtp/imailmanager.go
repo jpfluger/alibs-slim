@@ -3,9 +3,14 @@ package aclient_smtp
 import "sync"
 
 type IMailManager interface {
+	Validate() error
+	GetIsActive() bool
 	FindTemplate(templateName MailTemplateName) *MailTemplate
-	SendWithRender(templateName MailTemplateName, addressGroup *MailAddressGroup, subjectMerge []interface{}, dataBody interface{}) error
-	SendWithRenderOptions(templateName MailTemplateName, smtpAuth ISMTPAuth, addressGroup *MailAddressGroup, subjectMerge []interface{}, dataBody interface{}) error
+	FromMAG(key MailAddressGroupKey, mergeMAG *MailAddressGroup) *MailAddressGroup
+	SendWithRenderMAGKey(templateName MailTemplateName, magKey MailAddressGroupKey, subjectMerge []interface{}, dataBody interface{}) error
+	SendWithRender(templateName MailTemplateName, mergeAddressGroup *MailAddressGroup, subjectMerge []interface{}, dataBody interface{}) error
+	SendWithRenderAsync(templateName MailTemplateName, mergeAddressGroup *MailAddressGroup, subjectMerge []interface{}, dataBody interface{}, fnCallback FNMailSendCallback)
+	SendWithRenderMAGKeyAsync(templateName MailTemplateName, magKey MailAddressGroupKey, subjectMerge []interface{}, dataBody interface{}, fnCallback FNMailSendCallback)
 }
 
 var (
@@ -13,14 +18,14 @@ var (
 	muGlobalMailManager = sync.RWMutex{}
 )
 
-func SetMailManager(mailManager IMailManager) {
-	muGlobalMailManager.Lock()
-	defer muGlobalMailManager.Unlock()
-	globalMailManager = mailManager
-}
-
 func MAILMANAGER() IMailManager {
 	muGlobalMailManager.RLock()
 	defer muGlobalMailManager.RUnlock()
 	return globalMailManager
+}
+
+func SetMailManager(mailManager IMailManager) {
+	muGlobalMailManager.Lock()
+	defer muGlobalMailManager.Unlock()
+	globalMailManager = mailManager
 }

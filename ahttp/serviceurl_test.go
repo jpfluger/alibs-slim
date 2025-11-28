@@ -258,7 +258,7 @@ func TestNewServiceUrl_NilOpts(t *testing.T) {
 		t.Errorf("Expected default PublicUrl to be 'https://localhost:%d', but got %s", su.ListenPort, su.PublicUrl)
 	}
 
-	if su.CertStorage == nil {
+	if su.certStorage == nil {
 		t.Errorf("Expected CertStorage to be set (default UseCertStorage), but got nil")
 	}
 }
@@ -324,7 +324,7 @@ func TestNewServiceUrl_NoCerts(t *testing.T) {
 		t.Errorf("Expected default ListenPort to be 80 for HTTP, but got %d", su.ListenPort)
 	}
 
-	if su.CertStorage != nil {
+	if su.certStorage != nil {
 		t.Errorf("Expected CertStorage to be nil, but got non-nil")
 	}
 }
@@ -376,7 +376,7 @@ func TestNewServiceUrl_UseCertStorage(t *testing.T) {
 		t.Fatalf("Expected NewServiceUrl to succeed, but got error: %v", err)
 	}
 
-	if su.CertStorage == nil {
+	if su.certStorage == nil {
 		t.Errorf("Expected CertStorage to be set, but got nil")
 	}
 
@@ -441,7 +441,7 @@ func TestNewServiceUrl_LoadFromFilesToStorage(t *testing.T) {
 		t.Fatalf("Expected NewServiceUrl to succeed, but got error: %v", err)
 	}
 
-	if su.CertStorage == nil {
+	if su.certStorage == nil {
 		t.Errorf("Expected CertStorage to be set after loading from files, but got nil")
 	}
 }

@@ -1,6 +1,11 @@
 package ahttp
 
 import (
+	"net/url"
+	"path"
+	"strings"
+	"sync"
+
 	"github.com/jpfluger/alibs-slim/aapp"
 	"github.com/jpfluger/alibs-slim/anetwork"
 	"github.com/jpfluger/alibs-slim/asessions"
@@ -13,6 +18,8 @@ type IVersionProvider interface {
 type IUrlProvider interface {
 	RouteExists(httpRouteId HttpRouteId) bool
 	MustUrl(httpRouteId HttpRouteId) string
+	MustFullUrl(httpRouteId HttpRouteId) string
+	MustUrlJoin(httpRouteId HttpRouteId, pathParams ...string) string
 	IfActiveUrlThenValue(activeUrl string, targetUrlKey HttpRouteId, value string) string
 }
 
@@ -83,6 +90,36 @@ func (psc *PageSessionController) MustUrl(httpRouteId HttpRouteId) string {
 	return psc.WebRouteController.MustUrl(httpRouteId)
 }
 
+// MustFullUrl returns the full URL by combining the public base URL with the route path for the given HttpRouteId.
+// It panics if the route is not found. If the route URL is relative (starts with '/'), it joins it to PublicUrl;
+// otherwise, it returns the route URL as-is (assuming it's absolute).
+func (psc *PageSessionController) MustFullUrl(httpRouteId HttpRouteId) string {
+	myURL := psc.MustUrl(httpRouteId)
+	if myURL == "" {
+		return ""
+	}
+	if strings.HasPrefix(myURL, "http://") || strings.HasPrefix(myURL, "https://") {
+		return myURL
+	}
+	u, err := url.JoinPath(psc.PublicUrl, myURL) // keeps "https://"
+	if err != nil {
+		panic(err)
+	}
+	return u
+}
+
+// MustUrlJoin returns the URL for the specified HttpRouteId joined with the provided path parameters,
+// or panics if the route is not found.
+func (psc *PageSessionController) MustUrlJoin(httpRouteId HttpRouteId, pathParams ...string) string {
+	base := psc.WebRouteController.MustUrl(httpRouteId)
+	if len(pathParams) == 0 {
+		return base
+	}
+	// Join the base URL with the path parameters, handling slashes properly
+	parts := append([]string{base}, pathParams...)
+	return path.Join(parts...)
+}
+
 // GetMinExtension returns the minimum extension required
 func (psc *PageSessionController) GetMinExtension() string {
 	return psc.MinExtension
@@ -107,22 +144,34 @@ func (psc *PageSessionController) WRC() IWebRouteController {
 	return psc.WebRouteController
 }
 
-// Define a global instance for IPageSessionController
-var pscInstance IPageSessionController
+// Global instance for IPageSessionController and its lock.
+var (
+	pscInstance IPageSessionController
+	pscMu       sync.RWMutex
+)
 
-// InitializePSC initializes the global instance of IPageSessionController.
-// This function should be called once at program startup.
+// InitializePSC sets the global instance of IPageSessionController.
+// It does nothing if already initialized.
 func InitializePSC(controller IPageSessionController) {
+	pscMu.Lock()
+	defer pscMu.Unlock()
+
 	if pscInstance != nil {
-		panic("pscInstance already initialized")
+		// Option 1: ignore silently
+		// Option 2: log a warning or return an error
+		return
 	}
+
 	pscInstance = controller
 }
 
-// PSC returns the global instance of IPageSessionController.
+// PSC returns the current global IPageSessionController.
+// If not initialized, it returns nil instead of panicking.
 func PSC() IPageSessionController {
+	pscMu.RLock()
+	defer pscMu.RUnlock()
 	if pscInstance == nil {
-		panic("pscInstance is not initialized")
+		panic("PSC instance not initialized")
 	}
 	return pscInstance
 }

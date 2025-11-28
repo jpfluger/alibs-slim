@@ -931,3 +931,49 @@ func IsPathWithin(base, target string) (bool, error) {
 	}
 	return true, nil
 }
+
+// IsUnderRoot checks if the given path is under (or equal to) the root directory.
+// It resolves both paths to absolute and checks if the relative path does not start with "..".
+// Returns true if path is under root, false otherwise, and an error if resolution fails.
+func IsUnderRoot(root, path string) (bool, error) {
+	rootAbs, err := filepath.Abs(root)
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve root %s: %w", root, err)
+	}
+
+	pathAbs, err := filepath.Abs(path)
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve path %s: %w", path, err)
+	}
+
+	rel, err := filepath.Rel(rootAbs, pathAbs)
+	if err != nil {
+		return false, nil // Not under root if Rel fails
+	}
+
+	return !strings.HasPrefix(rel, ".."), nil
+}
+
+// IsDirEmpty checks if the directory at the given path exists and contains no files or subdirectories.
+// It returns true if the directory is empty, false if it exists but is not empty, and an error if the path
+// does not exist or cannot be accessed.
+func IsDirEmpty(path string) (bool, error) {
+	// Open the directory
+	dir, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return true, nil // Does not exist, treat as "empty" for auto-creation purposes
+		}
+		return false, fmt.Errorf("failed to open directory %s: %w", path, err)
+	}
+	defer dir.Close()
+
+	// Read one entry to check if empty
+	_, err = dir.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil // No entries, empty
+	} else if err != nil {
+		return false, fmt.Errorf("failed to read directory %s: %w", path, err)
+	}
+	return false, nil // Has at least one entry
+}

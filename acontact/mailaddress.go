@@ -2,8 +2,9 @@ package acontact
 
 import (
 	"fmt"
-	"github.com/bojanz/address"
 	"strings"
+
+	"github.com/bojanz/address"
 )
 
 // MailAddress represents a physical mailing address.
@@ -176,6 +177,35 @@ func (add *MailAddress) ToLines() []string {
 	}
 
 	return lines
+}
+
+// ToSingleLineLocalRegionPostal collapses the locality, region and postal into a single line.
+func (add *MailAddress) ToSingleLineLocalRegionPostal() string {
+	if add == nil {
+		return ""
+	}
+
+	var sb strings.Builder
+
+	if add.Locality != "" {
+		sb.WriteString(strings.TrimSpace(add.Locality))
+	}
+
+	if add.Region != "" {
+		if sb.Len() > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(strings.TrimSpace(add.Region))
+	}
+
+	if add.PostalCode != "" {
+		if sb.Len() > 0 {
+			sb.WriteString(" ")
+		}
+		sb.WriteString(strings.TrimSpace(add.PostalCode))
+	}
+
+	return sb.String()
 }
 
 //// HasAddressComplete checks if the essential fields of the address are filled.

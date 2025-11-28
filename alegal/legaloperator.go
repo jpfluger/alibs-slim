@@ -2,8 +2,10 @@ package alegal
 
 import (
 	"fmt"
-	"github.com/jpfluger/alibs-slim/acontact"
 	"strings"
+	"sync"
+
+	"github.com/jpfluger/alibs-slim/acontact"
 )
 
 // LegalOperator represents an operator in a legal context and embeds acontact.Company.
@@ -51,19 +53,23 @@ func (lo *LegalOperator) Validate() error {
 
 var appLegalOperator *LegalOperator
 var appLegalOperatorView *LegalOperatorView
+var muLegalOperator sync.RWMutex
 
 func LEGALOPERATOR() *LegalOperator {
+	muLegalOperator.RLock()
+	defer muLegalOperator.RUnlock()
 	return appLegalOperator
 }
 
 func SetLegalOperator(legalOperator *LegalOperator) {
-	if appLegalOperator != nil {
-		panic("appLegalOperator already initialized")
-	}
+	muLegalOperator.Lock()
+	defer muLegalOperator.Unlock()
 	appLegalOperator = legalOperator
 	appLegalOperatorView = NewLegalOperatorView(legalOperator)
 }
 
 func GetLegalOperatorView() *LegalOperatorView {
+	muLegalOperator.RLock()
+	defer muLegalOperator.RUnlock()
 	return appLegalOperatorView
 }

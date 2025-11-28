@@ -2,6 +2,7 @@ package aerr
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -13,7 +14,7 @@ type Error struct {
 // New creates a new Error instance from a non-nil error.
 // Returns nil if the input error is nil.
 func New(format string) *Error {
-	return NewError(fmt.Errorf(format))
+	return NewError(errors.New(format))
 }
 
 func Newf(format string, a ...interface{}) *Error {
@@ -31,7 +32,7 @@ func NewError(err error) *Error {
 
 // NewErrorFromString creates a new Error instance from a string.
 func NewErrorFromString(err string) *Error {
-	return &Error{error: fmt.Errorf(err)}
+	return &Error{error: errors.New(err)}
 }
 
 // IsNil checks if the Error instance or the embedded error is nil.
@@ -59,7 +60,7 @@ func (err *Error) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	err.error = fmt.Errorf(errMsg)
+	err.error = errors.New(errMsg)
 	return nil
 }
 

@@ -4,9 +4,9 @@
 
 # Example usage:
 # 1. Dry-run full workflow (debug mode)
-#    ./versionapply.sh -D -U -T -P -G "Release v1.2.0" -B main
+#    ./versionapply.sh -D -U -T -P -G "bump release" -B main
 # 2. Full workflow (update, tag locally, push tags, commit changes)
-#    ./versionapply.sh -U -T -P -G "release note" -B main
+#    ./versionapply.sh -U -T -P -G "bump release" -B main
 # 3. Update versions and tag locally (without pushing)
 #    ./versionapply.sh -U -T
 # 4. Push previously created tags to remote (no new updates or commits)

@@ -2,10 +2,12 @@ package aerr
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/nbutton23/zxcvbn-go"
-	"github.com/jpfluger/alibs-slim/acrypt"
 	"strings"
+
+	"github.com/jpfluger/alibs-slim/acrypt"
+	"github.com/nbutton23/zxcvbn-go"
 )
 
 // ValidationError represents an error that occurs during validation of input.
@@ -33,7 +35,7 @@ func (ve *ValidationError) GetSysError() error {
 	if ve.SysError != nil {
 		return ve.SysError
 	}
-	return fmt.Errorf(ve.ErrorLowercase())
+	return errors.New(ve.ErrorLowercase())
 }
 
 // MarshalJSON customizes the JSON marshaling to exclude the SysError field.

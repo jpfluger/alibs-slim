@@ -2,11 +2,12 @@ package atime
 
 import (
 	"encoding/json"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/teambition/rrule-go"
-	"testing"
-	"time"
 )
 
 // TestHoursInYear tests the calculation of hours in a regular year.
@@ -31,6 +32,70 @@ func HoursInYear(isLeapYear bool) int {
 		return 366 * 24 // 8784 hours in a leap year
 	}
 	return 365 * 24 // 8760 hours in a regular year
+}
+
+// TestCurrentDateUTC verifies that CurrentDateUTC returns the current date in UTC truncated to midnight.
+func TestCurrentDateUTC(t *testing.T) {
+	// Get the actual result
+	actual := CurrentDateUTC()
+
+	// Derive the expected value: current UTC time truncated to midnight
+	nowUTC := time.Now().UTC()
+	expected := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), 0, 0, 0, 0, time.UTC)
+
+	// Assert date components match
+	assert.Equal(t, expected.Year(), actual.Year(), "Year mismatch")
+	assert.Equal(t, expected.Month(), actual.Month(), "Month mismatch")
+	assert.Equal(t, expected.Day(), actual.Day(), "Day mismatch")
+
+	// Assert time components are zeroed
+	assert.Equal(t, 0, actual.Hour(), "Hour should be 0")
+	assert.Equal(t, 0, actual.Minute(), "Minute should be 0")
+	assert.Equal(t, 0, actual.Second(), "Second should be 0")
+	assert.Equal(t, 0, actual.Nanosecond(), "Nanosecond should be 0")
+
+	// Assert location is UTC
+	assert.Equal(t, time.UTC, actual.Location(), "Location should be UTC")
+
+	// Assert equality of the full time.Time values
+	assert.True(t, expected.Equal(actual), "Overall time.Time values do not match")
+}
+
+// TestCurrentDateLocal verifies that CurrentDateLocal returns the current date truncated to midnight in the specified timezone.
+func TestCurrentDateLocal(t *testing.T) {
+	// Capture a consistent 'now' for all calculations to avoid timing discrepancies
+	nowUTC := time.Now().UTC()
+
+	// Test with valid TZ (America/Chicago)
+	actual := CurrentDateLocal("America/Chicago")
+	loc, err := time.LoadLocation("America/Chicago")
+	require.NoError(t, err, "Failed to load America/Chicago timezone")
+	expected := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), 0, 0, 0, 0, loc).In(loc)
+	assert.True(t, expected.Equal(actual), "Overall time.Time values do not match for America/Chicago")
+
+	// Test fallback on empty TZ (should use default America/Chicago)
+	actualEmpty := CurrentDateLocal("")
+	assert.True(t, expected.Equal(actualEmpty), "Empty TZ should use default (America/Chicago)")
+
+	// Test fallback on invalid TZ (should use system TZ)
+	actualInvalid := CurrentDateLocal("Invalid/TZ")
+	sysTZ := GetSystemTimeZone()
+	sysLoc, err := time.LoadLocation(sysTZ)
+	if err != nil {
+		// If system TZ load fails, expect UTC fallback
+		expectedUTC := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), 0, 0, 0, 0, time.UTC)
+		assert.True(t, expectedUTC.Equal(actualInvalid), "Should fallback to UTC if system TZ invalid")
+	} else {
+		// Calculate expected for system TZ
+		expectedSys := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), 0, 0, 0, 0, sysLoc).In(sysLoc)
+		assert.True(t, expectedSys.Equal(actualInvalid), "Should fallback to system TZ on invalid input TZ")
+	}
+
+	// Assert time components are zeroed for actualInvalid
+	assert.Equal(t, 0, actualInvalid.Hour(), "Hour should be 0")
+	assert.Equal(t, 0, actualInvalid.Minute(), "Minute should be 0")
+	assert.Equal(t, 0, actualInvalid.Second(), "Second should be 0")
+	assert.Equal(t, 0, actualInvalid.Nanosecond(), "Nanosecond should be 0")
 }
 
 type testStruct struct {

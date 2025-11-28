@@ -1,8 +1,9 @@
 package ascripts
 
 import (
+	"strings" // Importing strings package for string manipulation
+
 	"github.com/jpfluger/alibs-slim/autils" // Importing custom utility package
-	"strings"                                              // Importing strings package for string manipulation
 )
 
 // ScriptType defines a type for different script types as a string
@@ -10,13 +11,14 @@ type ScriptType string
 
 // Constants for different script types
 const (
-	SCRIPTTYPE_GO       ScriptType = "go"
-	SCRIPTTYPE_HTML     ScriptType = "html"
-	SCRIPTTYPE_MARKDOWN ScriptType = "markdown"
-	SCRIPTTYPE_CSS      ScriptType = "css"
-	SCRIPTTYPE_TEXT     ScriptType = "text"
-	SCRIPTTYPE_JS       ScriptType = "js"  // JavaScript type, implementation left to higher-order apps
-	SCRIPTTYPE_SQL      ScriptType = "sql" // SQL type, similar to JS, implemented by higher-order apps
+	SCRIPTTYPE_GO            ScriptType = "go"
+	SCRIPTTYPE_HTML          ScriptType = "html"
+	SCRIPTTYPE_MARKDOWN      ScriptType = "markdown"
+	SCRIPTTYPE_MARKDOWN_HTML ScriptType = "markdown-html"
+	SCRIPTTYPE_CSS           ScriptType = "css"
+	SCRIPTTYPE_TEXT          ScriptType = "text"
+	SCRIPTTYPE_JS            ScriptType = "js"  // JavaScript type, implementation left to higher-order apps
+	SCRIPTTYPE_SQL           ScriptType = "sql" // SQL type, similar to JS, implemented by higher-order apps
 )
 
 // IsEmpty checks if the ScriptType is empty after trimming spaces
@@ -48,6 +50,8 @@ func (sType ScriptType) GetExt() string {
 		return ".html"
 	case SCRIPTTYPE_MARKDOWN:
 		return ".md"
+	case SCRIPTTYPE_MARKDOWN_HTML:
+		return ".md"
 	case SCRIPTTYPE_CSS:
 		return ".css"
 	case SCRIPTTYPE_JS:
@@ -76,6 +80,8 @@ func ExtToScriptType(ext string) ScriptType {
 		return SCRIPTTYPE_HTML
 	case "md", "markdown":
 		return SCRIPTTYPE_MARKDOWN
+	case "mdh", "markdownh":
+		return SCRIPTTYPE_MARKDOWN_HTML
 	case "css":
 		return SCRIPTTYPE_CSS
 	case "js":

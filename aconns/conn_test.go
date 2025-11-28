@@ -3,11 +3,13 @@ package aconns
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
+	"testing"
+
 	"github.com/jpfluger/alibs-slim/areflect"
 	"github.com/jpfluger/alibs-slim/auuids"
 	"github.com/stretchr/testify/assert"
-	"reflect"
-	"testing"
 )
 
 func init() {
@@ -298,4 +300,96 @@ func TestConn_GetTenantInfo(t *testing.T) {
 	assert.Equal(t, tenantId.String(), info.TenantId.String())
 	assert.Equal(t, 1, info.Priority)
 	assert.Equal(t, "Primary", info.Label)
+}
+
+func TestConn_Clone_Basic(t *testing.T) {
+	original := &Conn{
+		Ignore:      true,
+		Id:          ParseConnId("550e8400-e29b-41d4-a716-446655440000"),
+		Adapter:     &DummyAdapter{Adapter: Adapter{Type: ADAPTERTYPE_DUMMY}},
+		Description: "Test connection",
+		IsRequired:  true,
+		IsBootstrap: false,
+		TenantInfo:  &ConnTenantInfo{Region: "us-west-2"},
+		AuthScopes:  AuthScopes{"domain"},
+		AuthUsages:  AuthUsages{"primary"},
+	}
+
+	clone, err := original.CloneWithError()
+	assert.NoError(t, err)
+	assert.NotNil(t, clone)
+	//assert.NotEqual(t, original, clone) // Different pointers
+	assert.Equal(t, original.Ignore, clone.Ignore)
+	assert.Equal(t, original.Id.String(), clone.Id.String())
+	assert.Equal(t, original.Description, clone.Description)
+	assert.Equal(t, original.IsRequired, clone.IsRequired)
+	assert.Equal(t, original.IsBootstrap, clone.IsBootstrap)
+	assert.Equal(t, original.TenantInfo, clone.TenantInfo)
+	assert.Equal(t, original.AuthScopes, clone.AuthScopes)
+	assert.Equal(t, original.AuthUsages, clone.AuthUsages)
+	//assert.Nil(t, clone.Adapter) // No adapter in original
+}
+
+func TestConn_Clone_WithAdapter_Fail(t *testing.T) {
+	original := &Conn{
+		Id: ParseConnId("550e8400-e29b-41d4-a716-446655440000"),
+		Adapter: &DummyAdapter{
+			shouldFail: true,
+		},
+	}
+
+	clone, err := original.CloneWithError()
+	assert.NotNil(t, err)
+	assert.Nil(t, clone)
+}
+
+func TestConn_Clone_Nil(t *testing.T) {
+	var original *Conn
+	clone := original.Clone()
+	assert.Nil(t, clone)
+}
+
+func TestConn_Clone_Empty(t *testing.T) {
+	original := &Conn{}
+	clone, err := original.CloneWithError()
+	assert.NotNil(t, err)
+	assert.Nil(t, clone)
+}
+
+func TestConn_Clone_MarshalError(t *testing.T) {
+	// BadAdapter with unmarshalable field (chan)
+	type BadAdapter struct {
+		Adapter
+		ch chan int
+	}
+
+	original := &Conn{
+		Adapter: &BadAdapter{ch: make(chan int)},
+	}
+
+	clone := original.Clone()
+	assert.Nil(t, clone) // Marshal fails due to chan
+}
+
+func TestConn_Clone_UnmarshalError(t *testing.T) {
+	// Force unmarshal error by manually marshaling to invalid JSON for adapter
+	original := &Conn{
+		Id:      ParseConnId("550e8400-e29b-41d4-a716-446655440000"),
+		Adapter: &DummyAdapter{Adapter: Adapter{Type: ADAPTERTYPE_DUMMY}},
+	}
+
+	// Manually marshal and tamper to cause unmarshal fail (e.g., invalid type)
+	data, _ := json.Marshal(original)
+	// Tamper: replace "type":"dummy" with invalid
+	tampered := []byte(string(data[:]))
+	tampered = []byte(strings.Replace(string(tampered), `"type":"dummy"`, `"type":"invalid"`, 1))
+
+	clone := &Conn{}
+	err := json.Unmarshal(tampered, clone)
+	assert.Error(t, err) // Simulate Clone's unmarshal step failing
+
+	// But for Clone itself: since it uses valid original, it succeeds; this tests the mechanism.
+	cloneDirect, err := original.CloneWithError()
+	assert.NotNil(t, cloneDirect)
+	assert.Nil(t, err)
 }

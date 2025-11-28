@@ -1,13 +1,14 @@
 package amidware
 
 import (
-	"github.com/alexedwards/scs/v2"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/jpfluger/alibs-slim/asessions"
-	"github.com/jpfluger/alibs-slim/autils"
 	"net/http"
 	"time"
+
+	"github.com/alexedwards/scs/v2"
+	"github.com/jpfluger/alibs-slim/asessions"
+	"github.com/jpfluger/alibs-slim/autils"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 // Echo-SCS-Session

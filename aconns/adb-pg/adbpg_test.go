@@ -2,12 +2,13 @@ package adb_pg
 
 import (
 	"database/sql"
+	"testing"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jpfluger/alibs-slim/aconns"
 	"github.com/stretchr/testify/assert"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
-	"testing"
 )
 
 // Global variables for connection details

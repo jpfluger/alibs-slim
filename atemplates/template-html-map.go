@@ -49,6 +49,7 @@ func GetHTMLTemplateFunctions(fmapType TemplateFunctions) *htemplate.FuncMap {
 			"ToUpper":      strings.ToUpper,
 			"ToLower":      strings.ToLower,
 			"ToUpperFirst": ToUpperFirst,
+			"Title":        Title,
 
 			// Conversion functions.
 			"ToInt":       ToInt,
@@ -102,6 +103,7 @@ func GetHTMLTemplateFunctions(fmapType TemplateFunctions) *htemplate.FuncMap {
 			"SafeHtml":     SafeHtml,
 			"SafeHtmlAttr": SafeHtmlAttr,
 			"SafeJS":       SafeJS,
+			"SafeCSS":      SafeCSS,
 			// Deprecated
 			"MustSnippetRenderHTML": MustSnippetRenderHTML,
 			// Deprecated
@@ -133,6 +135,11 @@ func SafeHtmlAttr(s string) htemplate.HTMLAttr {
 // SafeJS marks a string as safe JavaScript within an HTML template.
 func SafeJS(s string) htemplate.JS {
 	return htemplate.JS(s)
+}
+
+// SafeCSS marks a string as safe CSS within an HTML template.
+func SafeCSS(s string) htemplate.CSS {
+	return htemplate.CSS(s)
 }
 
 // IfBoolThen returns one of two strings based on a boolean condition.
@@ -427,4 +434,13 @@ func ArrayContainsString(arr []string, target string) bool {
 		}
 	}
 	return false
+}
+
+// Title capitalizes the first letter of the input string using Unicode-aware handling.
+func Title(s string) string {
+	if s == "" {
+		return ""
+	}
+	r := []rune(s)
+	return string(append([]rune{unicode.ToUpper(r[0])}, r[1:]...))
 }

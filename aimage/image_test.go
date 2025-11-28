@@ -2,13 +2,14 @@ package aimage
 
 import (
 	"encoding/base64"
-	"github.com/stretchr/testify/assert"
-	"github.com/jpfluger/alibs-slim/autils"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/jpfluger/alibs-slim/autils"
+	"github.com/stretchr/testify/assert"
 )
 
 // All test images part of public domain
@@ -95,7 +96,7 @@ func TestImageFilterOption_CreateFromBytes_Ext(t *testing.T) {
 	name := "text.txt"
 	image, err := CreateFromBytes(data, name, &ImageFilterOption{
 		Types: ImageTypes{"txt"},
-	})
+	}, LIMIT_10MB)
 	assert.NoError(t, err)
 	assert.NotNil(t, image)
 }
@@ -106,7 +107,7 @@ func TestImageFilterOption_CreateFromBytes_Tags(t *testing.T) {
 	name := "text.txt"
 	image, err := CreateFromBytes(data, name, &ImageFilterOption{
 		Tags: []string{"text"},
-	})
+	}, LIMIT_10MB)
 	assert.NoError(t, err)
 	assert.NotNil(t, image)
 }
@@ -165,12 +166,8 @@ func TestCreateFromFile(t *testing.T) {
 	// testImageFile("test-data/conviction.mov", "mov", "video/mp4")
 }
 
+// TestToImageMimeType tests ToImageMimeType with various cases.
 func TestToImageMimeType(t *testing.T) {
-	customExtMimeTypes = ExtMimeTypeMap{
-		"jpg": {Ext: "jpg", Mime: "image/jpeg"},
-		"png": {Ext: "png", Mime: "image/png"},
-	}
-
 	tests := []struct {
 		name     string
 		image    *Image
@@ -201,9 +198,7 @@ func TestToImageMimeType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := tt.image.ToImageMimeType()
-			if result != tt.expected {
-				t.Errorf("ToImageMimeType() = %q; expected %q", result, tt.expected)
-			}
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

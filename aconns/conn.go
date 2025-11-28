@@ -3,9 +3,12 @@ package aconns
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jpfluger/alibs-slim/areflect"
 	"reflect"
 	"sync"
+	"time"
+
+	"github.com/jpfluger/alibs-slim/alog"
+	"github.com/jpfluger/alibs-slim/areflect"
 )
 
 // Conn struct represents a connection with an adapter.
@@ -25,6 +28,8 @@ type Conn struct {
 
 	AuthScopes AuthScopes `json:"authScopes,omitempty"` // e.g. ["domain", "module"]
 	AuthUsages AuthUsages `json:"authUsages,omitempty"` // e.g. ["mfa", "primary"]
+
+	IsValidated bool // Set to true if Validate() succeeds; used to track config validity without disabling.
 
 	mu sync.RWMutex // Protects access to the fields for concurrent usage.
 }
@@ -67,10 +72,15 @@ func (c *Conn) GetIsBootstrap() bool {
 // Validate checks if the Conn is valid.
 // It ensures the adapter is not nil and validates the adapter.
 // If the Id is not set, it auto-assigns a new UUID.
+// Sets IsValidated to true on success.
 func (c *Conn) Validate() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.validate()
+}
 
+// validate is the internal, lock-free version of Validate.
+func (c *Conn) validate() error {
 	if c.Ignore {
 		return nil
 	}
@@ -91,6 +101,8 @@ func (c *Conn) Validate() error {
 		c.TenantInfo = &ConnTenantInfo{}
 	}
 
+	c.IsValidated = true
+
 	return nil
 }
 
@@ -99,7 +111,19 @@ func (c *Conn) Test() (bool, TestStatus, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	return c.test()
+	if c.Ignore {
+		return true, TESTSTATUS_INITIALIZED, nil
+	}
+
+	if !c.IsValidated {
+		if err := c.validate(); err != nil {
+			return false, TESTSTATUS_FAILED, err
+		}
+	}
+	if c.Adapter == nil {
+		return false, TESTSTATUS_FAILED, fmt.Errorf("adapter is nil")
+	}
+	return c.Adapter.Test() // Delegate to adapter
 }
 
 // TestBootstrap attempts to establish the connection if it is marked as bootstrap.
@@ -130,6 +154,12 @@ func (c *Conn) test() (bool, TestStatus, error) {
 		return true, TESTSTATUS_INITIALIZED, nil
 	}
 
+	if !c.IsValidated {
+		if err := c.validate(); err != nil {
+			return false, TESTSTATUS_FAILED, err
+		}
+	}
+
 	// Attempt to test the adapter
 	ok, status, err := c.Adapter.Test()
 	if err != nil {
@@ -143,6 +173,101 @@ func (c *Conn) test() (bool, TestStatus, error) {
 	}
 
 	return ok, status, nil
+}
+
+// Refresh reconnects the underlying adapter.
+func (c *Conn) Refresh() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.Adapter == nil {
+		return fmt.Errorf("no adapter")
+	}
+	return c.Adapter.Refresh()
+}
+
+// GetHealth returns the health from the adapter.
+func (c *Conn) GetHealth() *HealthCheck {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.Adapter == nil {
+		return NewHealthCheck(HEALTHSTATUS_UNKNOWN)
+	}
+	return c.Adapter.GetHealth()
+}
+
+// StartMonitor periodically checks and refreshes if not validated or unhealthy.
+func (c *Conn) StartMonitor(interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			<-ticker.C
+			c.mu.RLock()
+			health := c.GetHealth()
+			needsCheck := !c.IsValidated || health.IsStale(interval) || health.IsFailed()
+			c.mu.RUnlock()
+			if needsCheck {
+				if _, _, err := c.Test(); err != nil {
+					// Log warn; optional backoff
+				} else if !c.IsValidated {
+					c.Validate() // Retry validate
+				}
+			}
+		}
+	}()
+}
+
+// HealthCallback is a function type for notifications on health changes.
+// It receives the Conn, updated HealthCheck, and any error from the check.
+type HealthCallback func(c *Conn, hc *HealthCheck, err error)
+
+// StartMonitorWithCallback starts a background goroutine to periodically monitor the connection's health.
+// It uses the provided interval for checks. If cb is non-nil, it invokes the callback after each check.
+// The monitor runs indefinitely until the program exits.
+func (c *Conn) StartMonitorWithCallback(interval time.Duration, cb HealthCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.Ignore {
+		return // No monitoring for ignored conns.
+	}
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			c.mu.RLock()
+			needsCheck := !c.IsValidated || c.GetHealth().IsStale(interval) || c.GetHealth().IsFailed()
+			c.mu.RUnlock()
+
+			if needsCheck {
+				_, status, err := c.Test()
+				hc := c.GetHealth() // Updated in Test().
+
+				if cb != nil {
+					// Invoke callback safely with recovery.
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								// Log panic (use your logger).
+								alog.LOGGER(alog.LOGGER_APP).Error().Msgf("Callback panic recovered: %v", r)
+							}
+						}()
+						cb(c, hc, err)
+					}()
+				}
+
+				if err != nil {
+					// Log warn with status.
+					alog.LOGGER(alog.LOGGER_APP).Warn().Err(err).Msgf("Conn test failed with status: %s", status)
+					// Optional backoff can be added here.
+				} else if !c.IsValidated {
+					c.Validate() // Retry validate.
+				}
+			}
+		}
+	}()
 }
 
 // UnmarshalJSON is a custom unmarshaller for Conn that handles IAdapter.
@@ -242,4 +367,48 @@ func (c *Conn) SetAuthUsages(usages AuthUsages) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.AuthUsages = usages
+}
+
+// GetIsValidated returns if this Conn has been validated successfully.
+func (c *Conn) GetIsValidated() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.IsValidated
+}
+
+// Clone creates a deep copy of the Conn using JSON marshaling/unmarshaling.
+func (c *Conn) Clone() *Conn {
+	if c == nil {
+		return nil
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	data, err := json.Marshal(c)
+	if err != nil {
+		// Handle error: for simplicity, return nil; in production, log or panic as needed.
+		return nil
+	}
+	clone := &Conn{}
+	if err := json.Unmarshal(data, clone); err != nil {
+		return nil
+	}
+	return clone
+}
+
+func (c *Conn) CloneWithError() (*Conn, error) {
+	if c == nil {
+		return nil, fmt.Errorf("nil conn")
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	data, err := json.Marshal(c)
+	if err != nil {
+		// Handle error: for simplicity, return nil; in production, log or panic as needed.
+		return nil, err
+	}
+	clone := &Conn{}
+	if err := json.Unmarshal(data, clone); err != nil {
+		return nil, err
+	}
+	return clone, nil
 }

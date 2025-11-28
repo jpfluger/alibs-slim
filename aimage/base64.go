@@ -3,11 +3,25 @@ package aimage
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/jpfluger/alibs-slim/autils"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/jpfluger/alibs-slim/autils"
 )
+
+//// IsBase64 checks if a string is a valid Base64-encoded value without decoding it.
+//// Impossible!!!
+//// Why? Encode "hell" and the result is "aGVsbA=='.
+//// Therefore base64 can be "hell".
+//func IsBase64(s string) bool {
+//	s = strings.TrimSpace(s)
+//	if len(s) == 0 {
+//		return false
+//	}
+//	_, err := base64.StdEncoding.DecodeString(s)
+//	return err == nil
+//}
 
 // ToBytes decodes a base64 encoded string into a byte slice.
 func ToBytes(base64Str string) ([]byte, error) {
@@ -63,6 +77,10 @@ func ImageLoadFromFile(filePath string) (mimeType string, data []byte, err error
 	if err != nil {
 		return
 	}
+	if len(data) > 10*1024*1024 { // Added: 10MB limit
+		err = fmt.Errorf("file too large; max 10MB")
+		return
+	}
 
 	mimeType = CleanMimeType(http.DetectContentType(data), autils.GetFileNamePartExt(filePath))
 	return
@@ -70,22 +88,22 @@ func ImageLoadFromFile(filePath string) (mimeType string, data []byte, err error
 
 // Base64LoadFromFile loads an image file and returns its MIME type and base64 encoded data.
 func Base64LoadFromFile(filePath string) (mimeType, base64Str string, err error) {
-	mimeType, data, err := ImageLoadFromFile(filePath)
-	if err != nil {
-		return
+	mimeType1, data1, err1 := ImageLoadFromFile(filePath)
+	if err1 != nil {
+		return mimeType1, "", err1
 	}
-	base64Str = ToBase64(data)
-	return
+	base64Str = ToBase64(data1)
+	return mimeType1, base64Str, nil
 }
 
 // ImageDataLoadFromFile loads an image file and returns its MIME type and base64 data URI string.
 func ImageDataLoadFromFile(filePath string) (mimeType, imageData string, err error) {
-	mimeType, data, err := ImageLoadFromFile(filePath)
-	if err != nil {
-		return
+	mimeType1, data1, err1 := ImageLoadFromFile(filePath)
+	if err1 != nil {
+		return mimeType1, "", err1
 	}
-	imageData = ToBase64ImageDataWithMimeType(mimeType, data)
-	return
+	imageData = ToBase64ImageDataWithMimeType(mimeType1, data1)
+	return mimeType1, imageData, nil
 }
 
 // Base64SaveToFileAsBytes saves base64 encoded data to a file after decoding it.

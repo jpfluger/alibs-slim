@@ -1,8 +1,9 @@
 package aclient_smtp
 
 import (
-	"net/mail"
 	"testing"
+
+	"github.com/jpfluger/alibs-slim/aemail"
 )
 
 func TestMailPiece_Validate(t *testing.T) {
@@ -14,11 +15,11 @@ func TestMailPiece_Validate(t *testing.T) {
 		{
 			name: "Valid mail piece",
 			mail: MailPiece{
-				From: mail.Address{
+				From: aemail.Address{
 					Name:    "Sender",
 					Address: "sender@example.com",
 				},
-				To: []mail.Address{
+				To: aemail.Addresses{
 					{
 						Name:    "Recipient",
 						Address: "recipient@example.com",
@@ -32,11 +33,11 @@ func TestMailPiece_Validate(t *testing.T) {
 		{
 			name: "Invalid from address",
 			mail: MailPiece{
-				From: mail.Address{
+				From: aemail.Address{
 					Name:    "Sender",
 					Address: "invalid-email",
 				},
-				To: []mail.Address{
+				To: aemail.Addresses{
 					{
 						Name:    "Recipient",
 						Address: "recipient@example.com",
@@ -50,7 +51,7 @@ func TestMailPiece_Validate(t *testing.T) {
 		{
 			name: "No recipients",
 			mail: MailPiece{
-				From: mail.Address{
+				From: aemail.Address{
 					Name:    "Sender",
 					Address: "sender@example.com",
 				},
@@ -62,11 +63,11 @@ func TestMailPiece_Validate(t *testing.T) {
 		{
 			name: "Empty subject not allowed",
 			mail: MailPiece{
-				From: mail.Address{
+				From: aemail.Address{
 					Name:    "Sender",
 					Address: "sender@example.com",
 				},
-				To: []mail.Address{
+				To: aemail.Addresses{
 					{
 						Name:    "Recipient",
 						Address: "recipient@example.com",
@@ -80,11 +81,11 @@ func TestMailPiece_Validate(t *testing.T) {
 		{
 			name: "No text or HTML content",
 			mail: MailPiece{
-				From: mail.Address{
+				From: aemail.Address{
 					Name:    "Sender",
 					Address: "sender@example.com",
 				},
-				To: []mail.Address{
+				To: aemail.Addresses{
 					{
 						Name:    "Recipient",
 						Address: "recipient@example.com",
@@ -109,10 +110,10 @@ func TestMailPiece_Validate(t *testing.T) {
 // Helper function to create a sample MailPiece for testing
 func createTestMailPiece() *MailPiece {
 	return &MailPiece{
-		From:              mail.Address{Name: "Alice", Address: "alice@example.com"},
-		To:                []mail.Address{{Name: "Bob", Address: "bob@example.com"}},
-		CC:                []mail.Address{{Name: "Charlie", Address: "charlie@example.com"}},
-		BCC:               []mail.Address{{Name: "David", Address: "david@example.com"}},
+		From:              aemail.Address{Name: "Alice", Address: "alice@example.com"},
+		To:                aemail.Addresses{{Name: "Bob", Address: "bob@example.com"}},
+		CC:                aemail.Addresses{{Name: "Charlie", Address: "charlie@example.com"}},
+		BCC:               aemail.Addresses{{Name: "David", Address: "david@example.com"}},
 		AllowEmptySubject: true,
 		Subject:           "Test Subject",
 		AllowNoTextHMTL:   true,

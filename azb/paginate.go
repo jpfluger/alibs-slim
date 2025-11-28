@@ -2,119 +2,228 @@ package azb
 
 // IPaginate defines the interface for pagination operations.
 type IPaginate interface {
-	// SetCurrentPage sets the current page number within valid bounds.
 	SetCurrentPage(page int)
-
-	// Offset calculates the offset for database queries.
 	Offset() int
-
-	// Limit returns the limit for items per page.
 	Limit() int
-
-	// NavNext increments the current page to the next page.
 	NavNext()
-
-	// NavPrev decrements the current page to the previous page.
 	NavPrev()
-
-	// NavFirst sets the current page to the first page.
 	NavFirst()
-
-	// NavLast sets the current page to the last page.
 	NavLast()
-
-	// PeekNext returns the next page number without modifying the current page.
 	PeekNext() int
-
-	// PeekPrev returns the previous page number without modifying the current page.
 	PeekPrev() int
 }
 
-// Paginate holds the pagination parameters and provides methods for pagination control.
+// Paginate holds pagination state and UI config (merged from PaginateNav).
+// It implements IPaginate.
 type Paginate struct {
 	CurrentPage  int `json:"cp" query:"cp"` // Current page number, starting at 1.
-	TotalItems   int `json:"ti" query:"ti"` // Total number of items to be paginated.
-	ItemsPerPage int `json:"ip" query:"ip"` // Number of items per page.
-	TotalPages   int `json:"tp" query:"tp"` // Total number of pages, calculated based on TotalItems and ItemsPerPage.
+	TotalItems   int `json:"ti" query:"ti"` // Total number of items.
+	ItemsPerPage int `json:"ip" query:"ip"` // Items per page.
+	TotalPages   int `json:"tp" query:"tp"` // Calculated total pages.
+
+	// Optional for UUIDv7/cursor-based queries.
+	Cursor string `json:"cursor,omitempty" query:"cursor"`
+
+	// UI fields (from PaginateNav).
+	AddZClick bool   `json:"addZClick,omitempty"`
+	ZUrl      string `json:"zurl,omitempty"`
+	Label     string `json:"label,omitempty"`
+
+	// Per-page options (inlined from PaginateLimits).
+	PerPageOptions []PaginateLimit `json:"perPageOptions,omitempty"`
+
+	// Controls order (e.g., label-results, nav-links).
+	Controls ZBTypes `json:"controls,omitempty"`
+
+	// Link rendering options.
+	LinkRender struct {
+		NoStart bool `json:"noStart,omitempty"`
+		NoEnd   bool `json:"noEnd,omitempty"`
+		NoPrev  bool `json:"noPrev,omitempty"`
+		NoNext  bool `json:"noNext,omitempty"`
+	} `json:"linkRender,omitempty"`
 }
 
-// NewPaginate creates a new Paginate instance with the given current page, total items, and items per page.
-func NewPaginate(currentPage, totalItems, itemsPerPage int) *Paginate {
-	// If itemsPerPage is less than 1, set a default value of 25.
+// PaginateLimit (simple struct for per-page options).
+type PaginateLimit struct {
+	Label     string `json:"label,omitempty"`
+	Limit     int    `json:"limit,omitempty"`
+	IsDefault bool   `json:"isDefault,omitempty"`
+}
+
+// DefaultPerPageOptions is the global default list of per-page options.
+// Can be overridden at init time for custom defaults.
+var DefaultPerPageOptions = []PaginateLimit{
+	{Label: "All", Limit: 0, IsDefault: false},
+	{Label: "25", Limit: 25, IsDefault: true},
+	{Label: "50", Limit: 50, IsDefault: false},
+	{Label: "100", Limit: 100, IsDefault: false},
+}
+
+// DefaultPerPageOptionsNoAll is the global default list of per-page options without "All".
+var DefaultPerPageOptionsNoAll = []PaginateLimit{
+	{Label: "25", Limit: 25, IsDefault: true},
+	{Label: "50", Limit: 50, IsDefault: false},
+	{Label: "100", Limit: 100, IsDefault: false},
+}
+
+// NewPaginate initializes with validation using DefaultPerPageOptions.
+func NewPaginate(currentPage, totalItems, itemsPerPage int, cursor string) *Paginate {
+	return newPaginateWithOptions(currentPage, totalItems, itemsPerPage, cursor, DefaultPerPageOptions)
+}
+
+// NewPaginateNoAll initializes with validation using DefaultPerPageOptionsNoAll.
+func NewPaginateNoAll(currentPage, totalItems, itemsPerPage int, cursor string) *Paginate {
+	return newPaginateWithOptions(currentPage, totalItems, itemsPerPage, cursor, DefaultPerPageOptionsNoAll)
+}
+
+// newPaginateWithOptions is the internal initializer with custom per-page options.
+func newPaginateWithOptions(currentPage, totalItems, itemsPerPage int, cursor string, options []PaginateLimit) *Paginate {
 	if itemsPerPage < 1 {
 		itemsPerPage = 25
 	}
-	// If currentPage is less than 1, set it to the first page.
 	if currentPage < 1 {
 		currentPage = 1
 	}
-	// If totalItems is less than 1, set it to zero.
 	if totalItems < 1 {
 		totalItems = 0
 	}
-	// Calculate the total number of pages based on totalItems and itemsPerPage.
 	totalPages := (totalItems + itemsPerPage - 1) / itemsPerPage
-	// Return a new Paginate instance with validated parameters.
 	return &Paginate{
-		CurrentPage:  currentPage,
-		TotalItems:   totalItems,
-		ItemsPerPage: itemsPerPage,
-		TotalPages:   totalPages,
+		CurrentPage:    currentPage,
+		TotalItems:     totalItems,
+		ItemsPerPage:   itemsPerPage,
+		TotalPages:     totalPages,
+		Cursor:         cursor,
+		PerPageOptions: options,
 	}
 }
 
-// SetCurrentPage sets the current page to the provided page number, ensuring it falls within the valid range.
+// SetPerPageOptions updates the per-page options for this instance.
+func (p *Paginate) SetPerPageOptions(options []PaginateLimit) {
+	if len(options) > 0 {
+		p.PerPageOptions = options
+	}
+}
+
+// SetCurrentPage bounds the page.
 func (p *Paginate) SetCurrentPage(page int) {
 	if page < 1 {
-		page = 1 // Default to the first page if an invalid page number is provided.
+		page = 1
 	} else if page > p.TotalPages {
-		page = p.TotalPages // Set to the last page if the provided page number exceeds the total pages.
+		page = p.TotalPages
 	}
 	p.CurrentPage = page
 }
 
-// Offset calculates the database query offset based on the current page and items per page.
+// Offset for queries (0 if cursor mode).
 func (p *Paginate) Offset() int {
+	if p.Cursor != "" {
+		return 0
+	}
 	return (p.CurrentPage - 1) * p.ItemsPerPage
 }
 
-// Limit returns the number of items per page, to be used as the limit in database queries.
+// Limit returns items per page.
 func (p *Paginate) Limit() int {
 	return p.ItemsPerPage
 }
 
-// NavNext increments the current page number, moving to the next page.
+// NavNext advances page or cursor.
 func (p *Paginate) NavNext() {
+	if p.Cursor != "" {
+		// App-specific: Update cursor based on last item.
+		return
+	}
 	p.SetCurrentPage(p.CurrentPage + 1)
 }
 
-// NavPrev decrements the current page number, moving to the previous page.
+// NavPrev decrements the current page.
 func (p *Paginate) NavPrev() {
+	if p.Cursor != "" {
+		// App-specific logic.
+		return
+	}
 	p.SetCurrentPage(p.CurrentPage - 1)
 }
 
-// NavFirst sets the current page number to the first page.
+// NavFirst sets to first page.
 func (p *Paginate) NavFirst() {
+	if p.Cursor != "" {
+		// Reset cursor.
+		p.Cursor = ""
+	}
 	p.SetCurrentPage(1)
 }
 
-// NavLast sets the current page number to the last page.
+// NavLast sets to last page.
 func (p *Paginate) NavLast() {
+	if p.Cursor != "" {
+		// Set cursor to last batch.
+		return
+	}
 	p.SetCurrentPage(p.TotalPages)
 }
 
-// PeekNext returns the next page number without changing the current page.
+// PeekNext returns next page without changing.
 func (p *Paginate) PeekNext() int {
+	if p.Cursor != "" {
+		return p.CurrentPage + 1 // Or app-specific.
+	}
 	if p.CurrentPage < p.TotalPages {
 		return p.CurrentPage + 1
 	}
-	return p.CurrentPage // If on the last page, return the current page.
+	return p.CurrentPage
 }
 
-// PeekPrev returns the previous page number without changing the current page.
+// PeekPrev returns previous page without changing.
 func (p *Paginate) PeekPrev() int {
+	if p.Cursor != "" {
+		return p.CurrentPage - 1 // Or app-specific.
+	}
 	if p.CurrentPage > 1 {
 		return p.CurrentPage - 1
 	}
-	return p.CurrentPage // If on the first page, return the current page.
+	return p.CurrentPage
+}
+
+// GetZClick for UI class.
+func (p *Paginate) GetZClick() string {
+	if p.AddZClick {
+		return " zclick"
+	}
+	return ""
+}
+
+// HasPerPageLimit checks for target limit.
+func (p *Paginate) HasPerPageLimit(target int) bool {
+	for _, opt := range p.PerPageOptions {
+		if opt.Limit == target {
+			return true
+		}
+	}
+	return false
+}
+
+// GetPerPageLimitElseDefault returns target or default.
+func (p *Paginate) GetPerPageLimitElseDefault(target int) int {
+	var def int
+	for _, opt := range p.PerPageOptions {
+		if opt.Limit == target {
+			return target
+		}
+		if opt.IsDefault {
+			def = opt.Limit
+		}
+	}
+	return def
+}
+
+// PageNumbers for display.
+func (p *Paginate) PageNumbers() []int {
+	pages := make([]int, p.TotalPages)
+	for i := range pages {
+		pages[i] = i + 1
+	}
+	return pages
 }

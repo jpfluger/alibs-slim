@@ -157,13 +157,29 @@ func (t *FSSnippetsText) RenderSnippet(name string, data interface{}) (string, e
 // IsLoaded checks if the target snippet has been loaded as a template.
 func (t *FSSnippetsText) IsLoaded(name string) error {
 	if ISON_SNIPPETS_TEXT_LOADBYFILE || ISON_SNIPPETS_TEXT_RELOAD_ON_RENDER {
-		// In reload mode, check if file exists in any FS.
+		// In reload mode, walk each FS to check if a file with base name 'name' exists.
 		for _, sFS := range t.snippetsFS {
 			if sFS == nil {
 				continue
 			}
-			_, err := fs.Stat(sFS, name)
-			if err == nil {
+			found := false
+			err := fs.WalkDir(sFS, ".", func(filePath string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+				if d.IsDir() {
+					return nil
+				}
+				if strings.HasSuffix(filePath, ".gohtml") && path.Base(filePath) == name {
+					found = true
+					return fs.SkipAll // Stop walking once found
+				}
+				return nil
+			})
+			if err != nil {
+				return fmt.Errorf("failed to check snippet '%s' in FS: %w", name, err)
+			}
+			if found {
 				return nil // Found in this FS
 			}
 		}
