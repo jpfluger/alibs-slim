@@ -2,12 +2,59 @@ package auser
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/gofrs/uuid/v5"
 	"github.com/jpfluger/alibs-slim/autils"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestNewDeterministicUID(t *testing.T) {
+	t.Run("it produces deterministic results", func(t *testing.T) {
+		key := "system-admin-user"
+		uid1 := NewDeterministicUID(key)
+		uid2 := NewDeterministicUID(key)
+
+		// Check internal UUID match
+		if uid1.UUID != uid2.UUID {
+			t.Errorf("Expected identical UUIDs for same key, got %v and %v", uid1.UUID, uid2.UUID)
+		}
+
+		// Check Valid flag
+		if !uid1.Valid || !uid2.Valid {
+			t.Error("Expected UIDs to be marked as Valid")
+		}
+	})
+
+	t.Run("it produces different IDs for different keys", func(t *testing.T) {
+		uid1 := NewDeterministicUID("bot-a")
+		uid2 := NewDeterministicUID("bot-b")
+
+		if uid1 == uid2 {
+			t.Error("Expected different UUIDs for different keys, but they matched")
+		}
+	})
+
+	t.Run("it matches standard UUID V5 vectors (The Ebot Test)", func(t *testing.T) {
+		// NamespaceDNS + "ebot" MUST equal 315fe98e-d23e-5c37-8efc-48061978a0fa
+		key := "ebot"
+		expected := "315fe98e-d23e-5c37-8efc-48061978a0fa"
+
+		result := NewDeterministicUID(key)
+
+		if result.String() != expected {
+			t.Errorf("V5 calculation failed.\nExpected: %s\nActual:   %s", expected, result.String())
+		}
+	})
+
+	t.Run("it is never nil", func(t *testing.T) {
+		uid := NewDeterministicUID("anything")
+		if uid.IsNil() {
+			t.Error("NewDeterministicUID returned a Nil UID")
+		}
+	})
+}
 
 func TestToUIDFromUUID(t *testing.T) {
 	t.Run("Valid UUID", func(t *testing.T) {

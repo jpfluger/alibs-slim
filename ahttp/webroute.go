@@ -1,8 +1,8 @@
 package ahttp
 
 import (
-	"github.com/labstack/echo/v4"
 	"github.com/jpfluger/alibs-slim/asessions"
+	"github.com/labstack/echo/v4"
 	"strings"
 )
 
@@ -99,7 +99,7 @@ func NewWROptions(httpRouteId HttpRouteId, method HttpMethod, url string, permSe
 	// Convert permissions from strings to PermSet if provided as a list of strings.
 	if permSet == nil || len(permSet) == 0 {
 		if permStr != nil || len(permStr) > 0 {
-			permSet = asessions.NewPermSetByString(permStr)
+			permSet = asessions.MustNewPermSetByString(permStr)
 		}
 	}
 	// Trim and set the whitelist, using the URL if auto-whitelisting is enabled.

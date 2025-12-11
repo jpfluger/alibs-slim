@@ -39,7 +39,7 @@ func TestRouteBase_GetPath(t *testing.T) {
 // TestRouteBase_GetPerms tests the GetPerms method of RouteBase.
 func TestRouteBase_GetPerms(t *testing.T) {
 	rb := RouteBase{
-		Perms: asessions.NewPermSetByPair("perm1", "R"),
+		Perms: asessions.MustNewPermSetByPair("perm1", "R"),
 	}
 	if rb.GetPerms().HasPermS("perm1:R") != true {
 		t.Errorf("GetPerms()[\"perm1\"] = %v, want %v", rb.GetPerms()["perm1"], true)
@@ -62,7 +62,7 @@ func TestRouteBase_ConcurrentAccess(t *testing.T) {
 		RouteId:         "concurrent-route",
 		Method:          "POST",
 		Path:            "/concurrent/path",
-		Perms:           asessions.NewPermSetByPair("perm2", "R"),
+		Perms:           asessions.MustNewPermSetByPair("perm2", "R"),
 		RouteNotFoundId: "concurrent-not-found",
 	}
 

@@ -8,13 +8,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alexedwards/scs/badgerstore"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/jpfluger/alibs-slim/aconns"
+	"github.com/jpfluger/alibs-slim/aconns/aclient-badger/badgerstore"
+	"github.com/jpfluger/alibs-slim/acrypt"
+	"github.com/jpfluger/alibs-slim/alog"
 )
 
 const (
 	ADAPTERTYPE_BADGER = aconns.AdapterType("badger")
+	INDEX_CACHE_SIZE   = 100 << 20 // 100 MB
 )
 
 // AClientBadger represents a Badger client adapter.
@@ -23,6 +26,10 @@ type AClientBadger struct {
 
 	db    *badger.DB
 	bsMap *BadgerStoreMap
+
+	LoggerChannel  alog.ChannelLabel `json:"loggerChannel,omitempty"` // Optional: Channel for Badger logging
+	IndexCacheSize int64             `json:"indexCacheSize,omitempty"`
+	decodedKey     []byte            // Decoded encryption key (set in validate)
 
 	mu sync.RWMutex
 }
@@ -54,11 +61,37 @@ func (cn *AClientBadger) validate() error {
 		return err
 	}
 
+	//if cn.Password != "" {
+	//	keyLen := len(cn.Password)
+	//	if keyLen != 16 && keyLen != 24 && keyLen != 32 {
+	//		return fmt.Errorf("encryption key must be 16, 24, or 32 bytes long; got %d", keyLen)
+	//	}
+	//}
+
 	if cn.Password != "" {
-		keyLen := len(cn.Password)
+		var decoded []byte
+		var err error
+
+		// Check for explicit base64 prefix
+		if strings.HasPrefix(cn.Password, "base64:") {
+			decoded, err = acrypt.DecodePrefixedBase64(cn.Password)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Treat as raw bytes (no decoding)
+			decoded = []byte(cn.Password)
+		}
+
+		keyLen := len(decoded)
 		if keyLen != 16 && keyLen != 24 && keyLen != 32 {
 			return fmt.Errorf("encryption key must be 16, 24, or 32 bytes long; got %d", keyLen)
 		}
+		cn.decodedKey = decoded // Store the effective key bytes
+	}
+
+	if cn.IndexCacheSize < 0 {
+		cn.IndexCacheSize = 0
 	}
 
 	return nil
@@ -120,8 +153,26 @@ func (cn *AClientBadger) OpenConnection() error {
 // openConnection opens a connection to the Badger database.
 func (cn *AClientBadger) openConnection() error {
 	opts := badger.DefaultOptions(cn.Database)
-	if cn.GetPassword() != "" {
-		opts = opts.WithEncryptionKey([]byte(cn.GetPassword()))
+
+	opts.Logger = nil // Add this line to suppress all Badger logs
+	//// Set logger if LoggerChannel is defined; otherwise, suppress logging
+	//if !cn.LoggerChannel.IsEmpty() {
+	//	logger := alog.LOGGER(cn.LoggerChannel)
+	//	if logger != nil {
+	//		opts.Logger = logger  // Directly assign since zerolog.Logger implements badger.Logger
+	//	}
+	//} else {
+	//	opts.Logger = nil  // Suppress all logging
+	//}
+
+	if len(cn.decodedKey) > 0 {
+		opts = opts.WithEncryptionKey(cn.decodedKey)
+		// 100MB index cache (required for encrypted workloads)
+		if cn.IndexCacheSize <= 0 {
+			opts = opts.WithIndexCacheSize(INDEX_CACHE_SIZE)
+		} else {
+			opts = opts.WithIndexCacheSize(cn.IndexCacheSize)
+		}
 	}
 
 	db, err := badger.Open(opts)

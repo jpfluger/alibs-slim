@@ -3,7 +3,7 @@ package aclient_badger
 import (
 	"sync"
 
-	"github.com/alexedwards/scs/badgerstore"
+	"github.com/jpfluger/alibs-slim/aconns/aclient-badger/badgerstore"
 )
 
 type BadgerStoreMap struct {

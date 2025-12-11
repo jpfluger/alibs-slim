@@ -7,9 +7,9 @@ import (
 
 func TestRoles_Merge(t *testing.T) {
 	roleFactory := RoleFactory{
-		"admin": NewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
-		"user":  NewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
-		"api":   NewPermSetByString([]string{"self:XR", "dash:R", "bills:R"}),
+		"admin": MustNewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
+		"user":  MustNewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
+		"api":   MustNewPermSetByString([]string{"self:XR", "dash:R", "bills:R"}),
 	}
 
 	tests := []struct {
@@ -21,16 +21,16 @@ func TestRoles_Merge(t *testing.T) {
 	}{
 		{
 			roleNames:   RoleNames{"admin"},
-			permsPlus:   NewPermSetByString([]string{"reports:CRUD"}),
-			permsMinus:  NewPermSetByString([]string{"dash:L"}),
-			expected:    NewPermSetByString([]string{"self:XLCRUD", "dash:XCRUD", "bills:XLCRUD", "reports:CRUD"}),
+			permsPlus:   MustNewPermSetByString([]string{"reports:CRUD"}),
+			permsMinus:  MustNewPermSetByString([]string{"dash:L"}),
+			expected:    MustNewPermSetByString([]string{"self:XLCRUD", "dash:XCRUD", "bills:XLCRUD", "reports:CRUD"}),
 			description: "admin role with additional permissions for reports and minus dash:L",
 		},
 		{
 			roleNames:   RoleNames{"user", "api"},
-			permsPlus:   NewPermSetByString([]string{"files:XR"}),
-			permsMinus:  NewPermSetByString([]string{"self:R"}),
-			expected:    NewPermSetByString([]string{"self:X", "dash:XLR", "bills:R", "files:XR"}),
+			permsPlus:   MustNewPermSetByString([]string{"files:XR"}),
+			permsMinus:  MustNewPermSetByString([]string{"self:R"}),
+			expected:    MustNewPermSetByString([]string{"self:X", "dash:XLR", "bills:R", "files:XR"}),
 			description: "user and api roles with additional files:XR permission and removal of self:R",
 		},
 	}
@@ -63,18 +63,18 @@ func TestRoles_Merge(t *testing.T) {
 
 func TestRoleFactory_BuildPermSet(t *testing.T) {
 	roleFactory := RoleFactory{
-		"admin": NewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
-		"user":  NewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
-		"api":   NewPermSetByString([]string{"self:XR", "dash:R", "bills:R"}),
+		"admin": MustNewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
+		"user":  MustNewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
+		"api":   MustNewPermSetByString([]string{"self:XR", "dash:R", "bills:R"}),
 	}
 
 	role := &RoleMulti{
 		Names:      RoleNames{"admin", "user"},
-		PermsPlus:  NewPermSetByString([]string{"reports:CRUD"}),
-		PermsMinus: NewPermSetByString([]string{"dash:L"}),
+		PermsPlus:  MustNewPermSetByString([]string{"reports:CRUD"}),
+		PermsMinus: MustNewPermSetByString([]string{"dash:L"}),
 	}
 
-	expectedPermSet := NewPermSetByString([]string{"self:XLCRUD", "dash:XCRUD", "bills:XLCRUD", "reports:CRUD"})
+	expectedPermSet := MustNewPermSetByString([]string{"self:XLCRUD", "dash:XCRUD", "bills:XLCRUD", "reports:CRUD"})
 
 	// Call the BuildPermSet function
 	resultPermSet := roleFactory.BuildPermSetMulti(role)
@@ -87,19 +87,19 @@ func TestRoleFactory_BuildPermSet(t *testing.T) {
 
 func TestRoleFactory_BuildPermSetWithLimit(t *testing.T) {
 	roleFactory := RoleFactory{
-		"admin": NewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
-		"user":  NewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
+		"admin": MustNewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
+		"user":  MustNewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
 	}
 
 	role := &RoleMulti{
 		Names:      RoleNames{"admin", "user"},
-		PermsPlus:  NewPermSetByString([]string{"reports:CRUD"}),
-		PermsMinus: NewPermSetByString([]string{"dash:L"}),
+		PermsPlus:  MustNewPermSetByString([]string{"reports:CRUD"}),
+		PermsMinus: MustNewPermSetByString([]string{"dash:L"}),
 	}
 
-	defaultPermSet := NewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"})
+	defaultPermSet := MustNewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"})
 
-	expectedPermSet := NewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"})
+	expectedPermSet := MustNewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"})
 
 	// Call the BuildPermSetWithLimit function
 	resultPermSet := roleFactory.BuildPermSetWithLimitMulti(role, defaultPermSet)

@@ -2,6 +2,7 @@ package asessions
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 )
@@ -10,26 +11,26 @@ import (
 // The key must be lower-case.
 type PermSet map[string]*Perm
 
-// NewPermSetByPair creates a new PermSet containing a single Perm constructed from the given key and value.
-func NewPermSetByPair(key string, value string) PermSet {
+// MustNewPermSetByPair creates a new PermSet containing a single Perm constructed from the given key and value.
+func MustNewPermSetByPair(key string, value string) PermSet {
 	ps := PermSet{}
-	ps.SetPerm(NewPermByPair(key, value))
+	ps.SetPerm(MustNewPermByPair(key, value))
 	return ps
 }
 
-// NewPermSetByString creates a new PermSet from the provided string slice
-func NewPermSetByString(perms []string) PermSet {
+// MustNewPermSetByString creates a new PermSet from the provided string slice
+func MustNewPermSetByString(perms []string) PermSet {
 	ps := PermSet{}
 
 	for _, keyValue := range perms {
-		ps.SetPerm(NewPerm(keyValue))
+		ps.SetPerm(MustNewPerm(keyValue))
 	}
 
 	return ps
 }
 
-// NewPermSetByBits creates a new PermSet containing a single Perm with the given key and bitwise value.
-func NewPermSetByBits(key string, bits int) PermSet {
+// MustNewPermSetByBits creates a new PermSet containing a single Perm with the given key and bitwise value.
+func MustNewPermSetByBits(key string, bits int) PermSet {
 	ps := PermSet{}
 
 	key = strings.ToLower(strings.TrimSpace(key))
@@ -69,12 +70,21 @@ func SetPermSetByBits(ps PermSet, key string, bits int) PermSet {
 }
 
 // Validate ensures no nil values associated with a key
-func (ps PermSet) Validate() {
+func (ps PermSet) Validate() error {
 	for key, perm := range ps {
 		if perm == nil {
 			delete(ps, key) // Remove nil entries
+			continue
+		}
+		if !perm.IsValid() {
+			return fmt.Errorf("invalid perm for key %s: missing key or value", key)
+		}
+		if perm.value == nil || perm.value.IsEmptyValue() {
+			perm.value = &PermValue{value: 0}
+			// return fmt.Errorf("empty permission value for key %s", key)
 		}
 	}
+	return nil
 }
 
 // SetPerm adds or updates a Perm in the PermSet.
@@ -151,22 +161,22 @@ func (ps PermSet) HasPerm(target Perm) bool {
 
 // HasPermS checks if the PermSet has a specific permission.
 func (ps PermSet) HasPermS(keyPermValue string) bool {
-	return ps.MatchesPerm(NewPerm(keyPermValue))
+	return ps.MatchesPerm(MustNewPerm(keyPermValue))
 }
 
 // HasPermSV checks if the PermSet has a specific permission value for a given key.
 func (ps PermSet) HasPermSV(key string, permValue string) bool {
-	return ps.MatchesPerm(NewPermByPair(key, permValue))
+	return ps.MatchesPerm(MustNewPermByPair(key, permValue))
 }
 
 // HasPermB checks if the PermSet has a specific permission value for a given key.
 func (ps PermSet) HasPermB(keyBits string) bool {
-	return ps.MatchesPerm(NewPerm(keyBits))
+	return ps.MatchesPerm(MustNewPerm(keyBits))
 }
 
 // HasPermBV checks if the PermSet has a specific permission value for a given key.
 func (ps PermSet) HasPermBV(key string, bit int) bool {
-	return ps.MatchesPerm(NewPermByBitValue(key, bit))
+	return ps.MatchesPerm(MustNewPermByBitValue(key, bit))
 }
 
 // HasPermSet checks if the PermSet has a specific permission value for the target.
@@ -196,7 +206,7 @@ func (ps PermSet) ToStringArray() []string {
 func FromStringArray(perms []string) PermSet {
 	ps := PermSet{}
 	for _, keyValue := range perms {
-		ps.SetPerm(NewPerm(keyValue))
+		ps.SetPerm(MustNewPerm(keyValue))
 	}
 	return ps
 }
@@ -288,7 +298,7 @@ func (ps *PermSet) UnmarshalJSON(b []byte) error {
 	}
 
 	for _, keyValue := range *arr {
-		ps.SetPerm(NewPerm(keyValue))
+		ps.SetPerm(MustNewPerm(keyValue))
 	}
 
 	return nil

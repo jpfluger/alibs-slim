@@ -67,7 +67,7 @@ func TestUserSessionPermMethods(t *testing.T) {
 	session := NewUserSessionPermWithLoginStatus(LOGIN_SESSION_STATUS_OK)
 
 	// Test HasPerm method.
-	session.Perms = NewPermSetByBits("read", PERM_R)
+	session.Perms = MustNewPermSetByBits("read", PERM_R)
 
 	// Test HasPerm for no permissions
 	assert.False(t, session.HasPerm(Perm{key: "read", value: &PermValue{}}), "HasPerm should return false for no 'read' permission.")

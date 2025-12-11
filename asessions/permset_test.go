@@ -9,17 +9,17 @@ func TestPermSet_SetPerm(t *testing.T) {
 	ps := PermSet{}
 
 	// Add a new permission
-	perm1 := NewPerm("admin:CRUD")
+	perm1 := MustNewPerm("admin:CRUD")
 	ps.SetPerm(perm1)
 	assert.Equal(t, ps["admin"], perm1, "Expected 'admin' permission to be set")
 
 	// Add another permission
-	perm2 := NewPerm("user:RU")
+	perm2 := MustNewPerm("user:RU")
 	ps.SetPerm(perm2)
 	assert.Equal(t, ps["user"], perm2, "Expected 'user' permission to be set")
 
 	// Replace an existing permission
-	perm3 := NewPerm("admin:R")
+	perm3 := MustNewPerm("admin:R")
 	ps.SetPerm(perm3)
 	assert.Equal(t, ps["admin"], perm3, "Expected 'admin' permission to be replaced with 'R'")
 }
@@ -27,8 +27,8 @@ func TestPermSet_SetPerm(t *testing.T) {
 // TestPermSet_MergePerm tests merging a permission into a PermSet.
 func TestPermSet_MergePerm(t *testing.T) {
 	ps := PermSet{}
-	perm1 := NewPerm("admin:CR")
-	perm2 := NewPerm("admin:UD")
+	perm1 := MustNewPerm("admin:CR")
+	perm2 := MustNewPerm("admin:UD")
 
 	ps.SetPerm(perm1)
 	ps.MergePerm(perm2)
@@ -40,8 +40,8 @@ func TestPermSet_MergePerm(t *testing.T) {
 // TestPermSet_SubtractPerm tests subtracting a permission from a PermSet.
 func TestPermSet_SubtractPerm(t *testing.T) {
 	ps := PermSet{}
-	perm1 := NewPerm("admin:CRUD")
-	perm2 := NewPerm("admin:CR")
+	perm1 := MustNewPerm("admin:CRUD")
+	perm2 := MustNewPerm("admin:CR")
 
 	ps.SetPerm(perm1)
 	ps.SubtractPerm(perm2)
@@ -53,11 +53,11 @@ func TestPermSet_SubtractPerm(t *testing.T) {
 // TestPermSet_MatchesPerm tests matching a permission in a PermSet.
 func TestPermSet_MatchesPerm(t *testing.T) {
 	ps := PermSet{}
-	perm := NewPerm("admin:CRUD")
+	perm := MustNewPerm("admin:CRUD")
 	ps.SetPerm(perm)
 
-	matchPerm := NewPerm("admin:CR")
-	noMatchPerm := NewPerm("admin:XL")
+	matchPerm := MustNewPerm("admin:CR")
+	noMatchPerm := MustNewPerm("admin:XL")
 
 	assert.True(t, ps.MatchesPerm(matchPerm))
 	assert.False(t, ps.MatchesPerm(noMatchPerm))
@@ -66,8 +66,8 @@ func TestPermSet_MatchesPerm(t *testing.T) {
 // TestPermSet_ToStringArray tests converting a PermSet to a string array.
 func TestPermSet_ToStringArray(t *testing.T) {
 	ps := PermSet{}
-	ps.SetPerm(NewPerm("admin:CRUD"))
-	ps.SetPerm(NewPerm("user:CR"))
+	ps.SetPerm(MustNewPerm("admin:CRUD"))
+	ps.SetPerm(MustNewPerm("user:CR"))
 
 	arr := ps.ToStringArray()
 	assert.ElementsMatch(t, []string{"admin:CRUD", "user:CR"}, arr)
@@ -86,11 +86,11 @@ func TestPermSet_FromStringArray(t *testing.T) {
 // TestPermSet_MergeByPermSet tests merging two PermSets.
 func TestPermSet_MergeByPermSet(t *testing.T) {
 	ps1 := PermSet{}
-	ps1.SetPerm(NewPerm("admin:CR"))
+	ps1.SetPerm(MustNewPerm("admin:CR"))
 
 	ps2 := PermSet{}
-	ps2.SetPerm(NewPerm("admin:UD"))
-	ps2.SetPerm(NewPerm("user:CRUD"))
+	ps2.SetPerm(MustNewPerm("admin:UD"))
+	ps2.SetPerm(MustNewPerm("user:CRUD"))
 
 	ps1.MergeByPermSet(ps2)
 
@@ -102,12 +102,12 @@ func TestPermSet_MergeByPermSet(t *testing.T) {
 // TestPermSet_SubtractByPermSet tests subtracting one PermSet from another.
 func TestPermSet_SubtractByPermSet(t *testing.T) {
 	ps1 := PermSet{}
-	ps1.SetPerm(NewPerm("admin:CRUD"))
-	ps1.SetPerm(NewPerm("user:CRUD"))
+	ps1.SetPerm(MustNewPerm("admin:CRUD"))
+	ps1.SetPerm(MustNewPerm("user:CRUD"))
 
 	ps2 := PermSet{}
-	ps2.SetPerm(NewPerm("admin:CR"))
-	ps2.SetPerm(NewPerm("user:U"))
+	ps2.SetPerm(MustNewPerm("admin:CR"))
+	ps2.SetPerm(MustNewPerm("user:U"))
 
 	ps1.SubtractByPermSet(ps2)
 
@@ -138,26 +138,26 @@ func TestSetPermSetByBits(t *testing.T) {
 	assert.Equal(t, "XL", ps["user"].Value()) // No changes
 }
 
-func TestNewPermSetByBits(t *testing.T) {
+func TestMustNewPermSetByBits(t *testing.T) {
 	// Create a PermSet with valid input
-	ps := NewPermSetByBits("admin", PERM_C|PERM_R)
+	ps := MustNewPermSetByBits("admin", PERM_C|PERM_R)
 	assert.Equal(t, 1, len(ps))
 	assert.Equal(t, "CR", ps["admin"].Value())
 
 	// Test with empty key
-	ps = NewPermSetByBits("", PERM_C|PERM_R)
+	ps = MustNewPermSetByBits("", PERM_C|PERM_R)
 	assert.Equal(t, 0, len(ps)) // Should return an empty PermSet
 
 	// Test with zero bits
-	ps = NewPermSetByBits("user", 0)
+	ps = MustNewPermSetByBits("user", 0)
 	assert.Equal(t, 0, len(ps)) // Should return an empty PermSet
 }
 
 // TestPermSet_MarshalAsInt tests the MarshalAsInt method of PermSet.
 func TestPermSet_MarshalAsInt(t *testing.T) {
 	ps := PermSet{
-		"admin": NewPerm("admin:CRUD"),
-		"user":  NewPerm("user:RU"),
+		"admin": MustNewPerm("admin:CRUD"),
+		"user":  MustNewPerm("user:RU"),
 		"guest": nil, // Ensure nil entries are handled correctly
 	}
 
@@ -183,32 +183,32 @@ func TestPermSet_IsSubsetOf(t *testing.T) {
 	}{
 		{
 			current: PermSet{
-				"admin": NewPerm("admin:CR"),
-				"user":  NewPerm("user:R"),
+				"admin": MustNewPerm("admin:CR"),
+				"user":  MustNewPerm("user:R"),
 			},
 			target: PermSet{
-				"admin": NewPerm("admin:CRUD"),
-				"user":  NewPerm("user:RU"),
+				"admin": MustNewPerm("admin:CRUD"),
+				"user":  MustNewPerm("user:RU"),
 			},
 			expected: true,
 			desc:     "current is a subset of target",
 		},
 		{
 			current: PermSet{
-				"admin": NewPerm("admin:CRUD"),
-				"user":  NewPerm("user:R"),
+				"admin": MustNewPerm("admin:CRUD"),
+				"user":  MustNewPerm("user:R"),
 			},
 			target: PermSet{
-				"admin": NewPerm("admin:CR"),
-				"user":  NewPerm("user:R"),
+				"admin": MustNewPerm("admin:CR"),
+				"user":  MustNewPerm("user:R"),
 			},
 			expected: false,
 			desc:     "admin has excessive permissions",
 		},
 		{
 			current: PermSet{
-				"admin": NewPerm("admin:CR"),
-				"user":  NewPerm("user:R"),
+				"admin": MustNewPerm("admin:CR"),
+				"user":  MustNewPerm("user:R"),
 			},
 			target:   PermSet{},
 			expected: false,
@@ -216,22 +216,22 @@ func TestPermSet_IsSubsetOf(t *testing.T) {
 		},
 		{
 			current: PermSet{
-				"admin": NewPerm("admin:CR"),
+				"admin": MustNewPerm("admin:CR"),
 			},
 			target: PermSet{
-				"admin": NewPerm("admin:CR"),
-				"user":  NewPerm("user:RU"),
+				"admin": MustNewPerm("admin:CR"),
+				"user":  MustNewPerm("user:RU"),
 			},
 			expected: true,
 			desc:     "admin matches and no extra keys",
 		},
 		{
 			current: PermSet{
-				"admin": NewPerm("admin:CR"),
-				"guest": NewPerm("guest:L"),
+				"admin": MustNewPerm("admin:CR"),
+				"guest": MustNewPerm("guest:L"),
 			},
 			target: PermSet{
-				"admin": NewPerm("admin:CRUD"),
+				"admin": MustNewPerm("admin:CRUD"),
 			},
 			expected: false,
 			desc:     "guest is missing in target",
@@ -247,15 +247,15 @@ func TestPermSet_IsSubsetOf(t *testing.T) {
 func TestPermSet_ReplaceExcessivePermSet(t *testing.T) {
 	// Create the master PermSet
 	master := PermSet{
-		"read":  NewPermByBitValue("read", PERM_R|PERM_U),
-		"write": NewPermByBitValue("write", PERM_C),
+		"read":  MustNewPermByBitValue("read", PERM_R|PERM_U),
+		"write": MustNewPermByBitValue("write", PERM_C),
 	}
 
 	// Create the target PermSet that may exceed the master
 	ps := PermSet{
-		"read":  NewPermByBitValue("read", PERM_R|PERM_U|PERM_X), // Exceeds master
-		"write": NewPermByBitValue("write", PERM_C|PERM_U),       // Exceeds master
-		"admin": NewPermByBitValue("admin", PERM_X),              // Not in master
+		"read":  MustNewPermByBitValue("read", PERM_R|PERM_U|PERM_X), // Exceeds master
+		"write": MustNewPermByBitValue("write", PERM_C|PERM_U),       // Exceeds master
+		"admin": MustNewPermByBitValue("admin", PERM_X),              // Not in master
 	}
 
 	// Replace excessive permissions
@@ -263,8 +263,8 @@ func TestPermSet_ReplaceExcessivePermSet(t *testing.T) {
 
 	// Expected results
 	expected := PermSet{
-		"read":  NewPermByBitValue("read", PERM_R|PERM_U),
-		"write": NewPermByBitValue("write", PERM_C),
+		"read":  MustNewPermByBitValue("read", PERM_R|PERM_U),
+		"write": MustNewPermByBitValue("write", PERM_C),
 	}
 
 	// Verify the result

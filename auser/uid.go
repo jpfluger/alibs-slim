@@ -2,14 +2,23 @@ package auser
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/gofrs/uuid/v5"
 	"github.com/jpfluger/alibs-slim/autils"
-	"strings"
+	"github.com/jpfluger/alibs-slim/auuids"
 )
 
 // UID represents a unique user identifier.
 type UID struct {
 	uuid.NullUUID
+}
+
+// NewDeterministicUID generates a Version 5 UUID based on the DNS namespace and a custom string key.
+// This guarantees that the same key (e.g., "ebot") always results in the exact same UID.
+func NewDeterministicUID(key string) UID {
+	// Uses uuid.NamespaceDNS as the base, consistent with standard V5 generation
+	return ToUIDFromUUID(uuid.NewV5(uuid.NamespaceDNS, key))
 }
 
 // NewUID creates a new UID with a non-nil value using NewNullUUIDWithValue.
@@ -38,6 +47,11 @@ func (sid UID) String() string {
 		return ""
 	}
 	return sid.UUID.String()
+}
+
+// ToUUID transforms the type to UUID
+func (sid UID) ToUUID() auuids.UUID {
+	return auuids.UUID{sid.NullUUID}
 }
 
 // FromString parses a string and assigns the UID to itself.

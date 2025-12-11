@@ -103,3 +103,26 @@ func (rf RoleFactory) BuildPermSetWithLimitMulti(role *RoleMulti, defaultPermSet
 
 	return limitedPermSet
 }
+
+// HasRole checks if the RoleFactory contains an entry for the given RoleName.
+// It returns true if the role exists (even if its PermSet is empty), false otherwise.
+func (rf RoleFactory) HasRole(roleName RoleName) bool {
+	if rf == nil || len(rf) == 0 || roleName.IsEmpty() {
+		return false
+	}
+	_, exists := rf[roleName]
+	return exists
+}
+
+// FindByRole retrieves the PermSet associated with the given RoleName from the RoleFactory.
+// If the RoleFactory is nil, empty, the RoleName is empty, or the role is not found, it returns an empty PermSet.
+func (rf RoleFactory) FindByRole(roleName RoleName) PermSet {
+	if rf == nil || len(rf) == 0 || roleName.IsEmpty() {
+		return PermSet{}
+	}
+	permSet, ok := rf[roleName]
+	if !ok {
+		return PermSet{}
+	}
+	return permSet
+}

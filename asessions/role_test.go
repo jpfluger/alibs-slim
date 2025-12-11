@@ -94,7 +94,7 @@ func TestRole_Validate(t *testing.T) {
 		{&Role{Name: "admin"}, false, "valid role with name"},
 		{&Role{}, true, "role with empty name"},
 		{nil, true, "nil role"},
-		{&Role{PermsPlus: NewPermSetByString([]string{"self:CRUD"})}, true, "role with permsPlus but empty name"},
+		{&Role{PermsPlus: MustNewPermSetByString([]string{"self:CRUD"})}, true, "role with permsPlus but empty name"},
 	}
 
 	for _, test := range tests {
@@ -107,11 +107,11 @@ func TestRole_Validate(t *testing.T) {
 
 func TestRole_BuildPermSetByFactorWithLimit(t *testing.T) {
 	roleFactory := RoleFactory{
-		"admin": NewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
-		"user":  NewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
+		"admin": MustNewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
+		"user":  MustNewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
 	}
 
-	defaultPermSet := NewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"})
+	defaultPermSet := MustNewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"})
 
 	tests := []struct {
 		role        *Role
@@ -122,11 +122,11 @@ func TestRole_BuildPermSetByFactorWithLimit(t *testing.T) {
 		{
 			role: &Role{
 				Name:       "admin",
-				PermsPlus:  NewPermSetByString([]string{"reports:CRUD"}),
-				PermsMinus: NewPermSetByString([]string{"dash:L"}),
+				PermsPlus:  MustNewPermSetByString([]string{"reports:CRUD"}),
+				PermsMinus: MustNewPermSetByString([]string{"dash:L"}),
 			},
 			expectError: false,
-			expected:    NewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"}),
+			expected:    MustNewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"}),
 			description: "valid role with admin permissions constrained by defaultPermSet",
 		},
 		{
@@ -144,7 +144,7 @@ func TestRole_BuildPermSetByFactorWithLimit(t *testing.T) {
 		},
 		{
 			role: &Role{
-				PermsPlus: NewPermSetByString([]string{"extra:XR"}),
+				PermsPlus: MustNewPermSetByString([]string{"extra:XR"}),
 			},
 			expectError: true,
 			description: "role with permsPlus but empty name",
@@ -166,15 +166,15 @@ func TestRoleMap(t *testing.T) {
 	// Create roles for testing
 	role1 := &Role{
 		Name:      "admin",
-		PermsPlus: NewPermSetByString([]string{"g.self:XRUD"}),
+		PermsPlus: MustNewPermSetByString([]string{"g.self:XRUD"}),
 	}
 	role2 := &Role{
 		Name:      "user",
-		PermsPlus: NewPermSetByString([]string{"g.self:XR"}),
+		PermsPlus: MustNewPermSetByString([]string{"g.self:XR"}),
 	}
 	role3 := &Role{
 		Name:      "manager",
-		PermsPlus: NewPermSetByString([]string{"g.reports:XL"}),
+		PermsPlus: MustNewPermSetByString([]string{"g.reports:XL"}),
 	}
 
 	t.Run("Set and Get Role", func(t *testing.T) {
@@ -193,7 +193,7 @@ func TestRoleMap(t *testing.T) {
 		// Update the same role
 		updatedRole := &Role{
 			Name:      "admin",
-			PermsPlus: NewPermSetByString([]string{"g.self:X"}),
+			PermsPlus: MustNewPermSetByString([]string{"g.self:X"}),
 		}
 		rm.Set(updatedRole)
 

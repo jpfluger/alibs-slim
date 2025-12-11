@@ -46,10 +46,12 @@ func GetHTMLTemplateFunctions(fmapType TemplateFunctions) *htemplate.FuncMap {
 			"CurrentYearUTC":            atime.CurrentYearUTC,
 
 			// String manipulation functions.
-			"ToUpper":      strings.ToUpper,
-			"ToLower":      strings.ToLower,
-			"ToUpperFirst": ToUpperFirst,
-			"Title":        Title,
+			"ToUpper":        strings.ToUpper,
+			"ToLower":        strings.ToLower,
+			"ToUpperFirst":   ToUpperFirst,
+			"Title":          Title,
+			"TruncateString": TruncateString,
+			"SliceString":    SliceString,
 
 			// Conversion functions.
 			"ToInt":       ToInt,
@@ -443,4 +445,56 @@ func Title(s string) string {
 	}
 	r := []rune(s)
 	return string(append([]rune{unicode.ToUpper(r[0])}, r[1:]...))
+}
+
+// TruncateString conditionally truncates a string to a maximum character length
+// and appends an optional suffix (e.g., "..."). It handles Unicode characters correctly
+// by operating on runes. If the string length is already less than or equal to
+// the maximum length, the original string is returned.
+//
+// Usage in template: {{ TruncateString .Notes 20 }} or {{ TruncateString .Notes 20 "..." }}
+func TruncateString(s string, length int, suffix ...string) string {
+	r := []rune(s)
+	rLen := len(r)
+
+	// 1. Check if truncation is necessary based on character count (runes).
+	if rLen <= length {
+		return s
+	}
+
+	// 2. Determine the suffix to use.
+	// If a suffix is provided in the variadic argument list, use the first one.
+	// Otherwise, use an empty string.
+	var finalSuffix string
+	if len(suffix) > 0 {
+		finalSuffix = suffix[0]
+	}
+
+	// 3. Truncate the rune slice and convert back to string, appending the suffix.
+	// We slice up to 'length' characters.
+	return string(r[:length]) + finalSuffix
+}
+
+// SliceString returns a substring of s from a start index up to an end index.
+// It handles Unicode characters correctly by operating on runes.
+// If start or end indices are out of bounds, they are adjusted.
+func SliceString(s string, start int, end int) string {
+	r := []rune(s)
+	rLen := len(r)
+
+	// Adjust start index
+	if start < 0 {
+		start = 0
+	}
+	// Adjust end index
+	if end > rLen {
+		end = rLen
+	}
+
+	// Check if the slice is valid after adjustments
+	if start >= end || start > rLen {
+		return ""
+	}
+
+	return string(r[start:end])
 }

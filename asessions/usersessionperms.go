@@ -70,22 +70,22 @@ func (us *UserSessionPerm) HasPerm(target Perm) bool {
 
 // HasPermS checks if the user session has a specific permission.
 func (us *UserSessionPerm) HasPermS(keyPermValue string) bool {
-	return us.Perms.MatchesPerm(NewPerm(keyPermValue))
+	return us.Perms.MatchesPerm(MustNewPerm(keyPermValue))
 }
 
 // HasPermSV checks if the user session has a specific permission value for a given key.
 func (us *UserSessionPerm) HasPermSV(key string, permValue string) bool {
-	return us.Perms.MatchesPerm(NewPermByPair(key, permValue))
+	return us.Perms.MatchesPerm(MustNewPermByPair(key, permValue))
 }
 
 // HasPermB checks if the user session has a specific permission value for a given key.
 func (us *UserSessionPerm) HasPermB(keyBits string) bool {
-	return us.Perms.MatchesPerm(NewPerm(keyBits))
+	return us.Perms.MatchesPerm(MustNewPerm(keyBits))
 }
 
 // HasPermBV checks if the user session has a specific permission value for a given key.
 func (us *UserSessionPerm) HasPermBV(key string, bit int) bool {
-	return us.Perms.MatchesPerm(NewPermByBitValue(key, bit))
+	return us.Perms.MatchesPerm(MustNewPermByBitValue(key, bit))
 }
 
 // HasPermSet checks if the user session has on matching permission with the target PermSet.

@@ -2,8 +2,8 @@ package aclient_badger
 
 import (
 	"fmt"
-	"github.com/alexedwards/scs/badgerstore"
 	"github.com/jpfluger/alibs-slim/aconns"
+	"github.com/jpfluger/alibs-slim/aconns/aclient-badger/badgerstore"
 	"sync"
 )
 

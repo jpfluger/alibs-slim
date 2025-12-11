@@ -61,7 +61,7 @@ func (ups *UIDsPermSet) RemoveUID(target auser.UID) {
 
 // HasPerm checks if a specific permission is in the set by its bit value.
 func (ups *UIDsPermSet) HasPerm(key string, bit int) bool {
-	perm := NewPermByBitValue(key, bit)
+	perm := MustNewPermByBitValue(key, bit)
 	return ups.Perms.MatchesPerm(perm)
 }
 
@@ -101,12 +101,12 @@ func (upss UIDsPermSets) GetUIDCountByPerm(perm Perm) int {
 
 // GetUIDCountByPermBit returns the count of UUIDs associated with a specific permission bit.
 func (upss UIDsPermSets) GetUIDCountByPermBV(key string, bit int) int {
-	return upss.GetUIDCountByPerm(*NewPermByBitValue(key, bit))
+	return upss.GetUIDCountByPerm(*MustNewPermByBitValue(key, bit))
 }
 
 // GetUIDCountByPermString returns the count of UUIDs associated with a specific permission value string.
 func (upss UIDsPermSets) GetUIDCountByPermSV(key string, permValue string) int {
-	return upss.GetUIDCountByPerm(*NewPermByPair(key, permValue))
+	return upss.GetUIDCountByPerm(*MustNewPermByPair(key, permValue))
 }
 
 // HasUIDByPerm checks if a specific UUID is associated with a specific permission.
@@ -121,12 +121,12 @@ func (upss UIDsPermSets) HasUIDByPerm(perm Perm, target auser.UID) bool {
 
 // HasUIDByPermBit checks if a specific UUID is associated with a specific permission bit.
 func (upss UIDsPermSets) HasUIDByPermBit(key string, bit int, target auser.UID) bool {
-	return upss.HasUIDByPerm(*NewPermByBitValue(key, bit), target)
+	return upss.HasUIDByPerm(*MustNewPermByBitValue(key, bit), target)
 }
 
 // HasUIDByPermString checks if a specific UUID is associated with a specific permission value string.
 func (upss UIDsPermSets) HasUIDByPermString(key string, permValue string, target auser.UID) bool {
-	return upss.HasUIDByPerm(*NewPermByPair(key, permValue), target)
+	return upss.HasUIDByPerm(*MustNewPermByPair(key, permValue), target)
 }
 
 // SetUIDByPerm adds a UUID to the set associated with a specific permission.
@@ -141,12 +141,12 @@ func (upss UIDsPermSets) SetUIDByPerm(perm Perm, target auser.UID) {
 
 // SetUIDByPermBit adds a UUID to the set associated with a specific permission bit.
 func (upss UIDsPermSets) SetUIDByPermBit(key string, bit int, target auser.UID) {
-	upss.SetUIDByPerm(*NewPermByBitValue(key, bit), target)
+	upss.SetUIDByPerm(*MustNewPermByBitValue(key, bit), target)
 }
 
 // SetUIDByPermString adds a UUID to the set associated with a specific permission value string.
 func (upss UIDsPermSets) SetUIDByPermString(key string, permValue string, target auser.UID) {
-	upss.SetUIDByPerm(*NewPermByPair(key, permValue), target)
+	upss.SetUIDByPerm(*MustNewPermByPair(key, permValue), target)
 }
 
 // RemoveUIDByPerm removes a UUID from the set associated with a specific permission.
@@ -160,12 +160,12 @@ func (upss UIDsPermSets) RemoveUIDByPerm(perm Perm, target auser.UID) {
 
 // RemoveUIDByPermBit removes a UUID to the set associated with a specific permission bit.
 func (upss UIDsPermSets) RemoveUIDByPermBit(key string, bit int, target auser.UID) {
-	upss.RemoveUIDByPerm(*NewPermByBitValue(key, bit), target)
+	upss.RemoveUIDByPerm(*MustNewPermByBitValue(key, bit), target)
 }
 
 // RemoveUIDByPermString removes a UUID to the set associated with a specific permission value string.
 func (upss UIDsPermSets) RemoveUIDByPermString(key string, permValue string, target auser.UID) {
-	upss.RemoveUIDByPerm(*NewPermByPair(key, permValue), target)
+	upss.RemoveUIDByPerm(*MustNewPermByPair(key, permValue), target)
 }
 
 // Clean removes any nil UUIDs from the UIDsPermSets.
@@ -186,7 +186,7 @@ func CreateSingleUIDsPermSetsByKVString(keyValue string, uids ...auser.UID) UIDs
 	return UIDsPermSets{
 		{
 			UIDs:  uids,
-			Perms: NewPermSetByString([]string{keyValue}),
+			Perms: MustNewPermSetByString([]string{keyValue}),
 		},
 	}
 }
@@ -196,7 +196,7 @@ func CreateSingleUIDsPermSetsByKVPair(key string, value string, uids ...auser.UI
 	return UIDsPermSets{
 		{
 			UIDs:  uids,
-			Perms: NewPermSetByPair(key, value),
+			Perms: MustNewPermSetByPair(key, value),
 		},
 	}
 }

@@ -94,7 +94,7 @@ func TestRoleMulti_Validate(t *testing.T) {
 		{&RoleMulti{Names: RoleNames{"admin"}}, false, "valid role with names"},
 		{&RoleMulti{}, true, "role with empty names"},
 		{nil, true, "nil role"},
-		{&RoleMulti{PermsPlus: NewPermSetByString([]string{"self:CRUD"})}, true, "role with permsPlus but empty names"},
+		{&RoleMulti{PermsPlus: MustNewPermSetByString([]string{"self:CRUD"})}, true, "role with permsPlus but empty names"},
 	}
 
 	for _, test := range tests {
@@ -107,11 +107,11 @@ func TestRoleMulti_Validate(t *testing.T) {
 
 func TestRoleMulti_BuildPermSetByFactorWithLimit(t *testing.T) {
 	roleFactory := RoleFactory{
-		"admin": NewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
-		"user":  NewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
+		"admin": MustNewPermSetByString([]string{"self:XLCRUD", "dash:XLCRUD", "bills:XLCRUD"}),
+		"user":  MustNewPermSetByString([]string{"self:XR", "dash:XLR", "bills:"}),
 	}
 
-	defaultPermSet := NewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"})
+	defaultPermSet := MustNewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"})
 
 	tests := []struct {
 		role        *RoleMulti
@@ -122,11 +122,11 @@ func TestRoleMulti_BuildPermSetByFactorWithLimit(t *testing.T) {
 		{
 			role: &RoleMulti{
 				Names:      RoleNames{"admin"},
-				PermsPlus:  NewPermSetByString([]string{"reports:CRUD"}),
-				PermsMinus: NewPermSetByString([]string{"dash:L"}),
+				PermsPlus:  MustNewPermSetByString([]string{"reports:CRUD"}),
+				PermsMinus: MustNewPermSetByString([]string{"dash:L"}),
 			},
 			expectError: false,
-			expected:    NewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"}),
+			expected:    MustNewPermSetByString([]string{"self:XR", "dash:XR", "bills:XL", "reports:R"}),
 			description: "valid role with admin permissions constrained by defaultPermSet",
 		},
 		{
@@ -144,7 +144,7 @@ func TestRoleMulti_BuildPermSetByFactorWithLimit(t *testing.T) {
 		},
 		{
 			role: &RoleMulti{
-				PermsPlus: NewPermSetByString([]string{"extra:XR"}),
+				PermsPlus: MustNewPermSetByString([]string{"extra:XR"}),
 			},
 			expectError: true,
 			description: "role with permsPlus but empty names",
@@ -167,14 +167,14 @@ func TestRoleMultiMap(t *testing.T) {
 
 	role1 := &RoleMulti{
 		Names:      RoleNames{"admin", "domain-admin"},
-		PermsPlus:  NewPermSetByString([]string{"self:CRUD"}),
-		PermsMinus: NewPermSetByString([]string{"reports:R"}),
+		PermsPlus:  MustNewPermSetByString([]string{"self:CRUD"}),
+		PermsMinus: MustNewPermSetByString([]string{"reports:R"}),
 	}
 
 	role2 := &RoleMulti{
 		Names:      RoleNames{"user"},
-		PermsPlus:  NewPermSetByString([]string{"dash:XR"}),
-		PermsMinus: NewPermSetByString([]string{"bills:L"}),
+		PermsPlus:  MustNewPermSetByString([]string{"dash:XR"}),
+		PermsMinus: MustNewPermSetByString([]string{"bills:L"}),
 	}
 
 	// Test Set and Get

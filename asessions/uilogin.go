@@ -1,8 +1,9 @@
 package asessions
 
 import (
-	"github.com/jpfluger/alibs-slim/auser"
 	"time"
+
+	"github.com/jpfluger/alibs-slim/auser"
 
 	"github.com/jpfluger/alibs-slim/atags"
 	"github.com/jpfluger/alibs-slim/azb"
@@ -25,6 +26,11 @@ const (
 	ACTIONKEY_CLICK_RESET_PASSWORD  = ActionKey("click-reset-password")
 	ACTIONKEY_CLICK_EMAILVERIFY     = ActionKey("click-email-verify")
 	ACTIONKEY_JWT_USER_FORGOT_LOGIN = ActionKey("jwt-user-forgot-login")
+
+	// Action keys enabling policy-based authentication solutions.
+	ACTIONKEY_IAM_PRIMARY = ActionKey("iam-primary")
+	ACTIONKEY_IAM_MFA     = ActionKey("iam-mfa")
+	ACTIONKEY_IAM_SSPR    = ActionKey("iam-sspr")
 
 	// Tag key for JWT metadata.
 	TAGKEY_JWT_META = atags.TagKey("jwt-meta")

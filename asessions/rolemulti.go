@@ -37,6 +37,18 @@ func (r *RoleMulti) Validate() error {
 	if len(r.Names) == 0 {
 		return fmt.Errorf("role names cannot be empty")
 	}
+	// Check for empty perms (optional but stricter)
+	//if len(r.PermsPlus) == 0 && len(r.PermsMinus) == 0 {
+	//	return fmt.Errorf("role perms cannot be completely empty")
+	//}
+	// Optional: Validate PermSets deeper
+	// Validate deeper and propagate errors
+	if err := r.PermsPlus.Validate(); err != nil {
+		return fmt.Errorf("invalid PermsPlus for role %s: %w", r.Names[0], err)
+	}
+	if err := r.PermsMinus.Validate(); err != nil {
+		return fmt.Errorf("invalid PermsMinus for role %s: %w", r.Names[0], err)
+	}
 	return nil
 }
 

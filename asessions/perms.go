@@ -45,39 +45,66 @@ type Perm struct {
 }
 
 // NewPerm creates a new Perm from a colon-separated key-value string.
-func NewPerm(keyValue string) *Perm {
+// It parses the input using ParsePerm and returns the Perm if successful.
+// If parsing fails (e.g., invalid format or permission values), it returns nil and the error.
+func NewPerm(keyValue string) (*Perm, error) {
+	perm, err := ParsePerm(keyValue)
+	if err != nil {
+		return nil, err
+	}
+	return perm, nil
+}
+
+// NewPermSetByString creates a new PermSet from a slice of colon-separated key-value strings.
+// It attempts to parse each string using NewPerm and adds valid permissions to the set.
+// If any string is invalid, it returns nil and an error wrapping the first failure.
+// Successful calls return the populated PermSet with no error.
+func NewPermSetByString(perms []string) (PermSet, error) {
+	ps := PermSet{}
+	for _, keyValue := range perms {
+		perm, err := NewPerm(keyValue)
+		if err != nil {
+			return nil, fmt.Errorf("invalid perm string %q: %w", keyValue, err)
+		}
+		ps.SetPerm(perm)
+	}
+	return ps, nil
+}
+
+// MustNewPerm creates a new Perm from a colon-separated key-value string.
+func MustNewPerm(keyValue string) *Perm {
 	perm, err := ParsePerm(keyValue)
 	if err != nil {
 		// Handle invalid input gracefully
-		return NewPermByPair("", "")
+		return MustNewPermByPair("", "")
 	}
 	return perm
 }
 
-// NewPermByBitValue creates a new Perm from a key and bit pair.
-func NewPermByBitValue(key string, bit int) *Perm {
+// MustNewPermByBitValue creates a new Perm from a key and bit pair.
+func MustNewPermByBitValue(key string, bit int) *Perm {
 	key = strings.ToLower(strings.TrimSpace(key))
 	if bit < 0 {
-		return NewPermByPair(key, "")
+		return MustNewPermByPair(key, "")
 	}
 
 	category, keyClean := autils.ExtractPrefixBrackets(key)
 	return &Perm{key: keyClean, value: &PermValue{bit}, category: category}
 }
 
-// NewPermByPair creates a new Perm from a key and value pair.
-func NewPermByPair(key string, value string) *Perm {
+// MustNewPermByPair creates a new Perm from a key and value pair.
+func MustNewPermByPair(key string, value string) *Perm {
 	key = strings.ToLower(strings.TrimSpace(key))
 	value = strings.ToUpper(strings.TrimSpace(value))
 
-	pv := NewPermValue(value)
+	pv := MustNewPermValue(value)
 
 	category, keyClean := autils.ExtractPrefixBrackets(key)
 	return &Perm{key: keyClean, value: pv, category: category}
 }
 
-// NewPermByPairCategory creates a new Perm with a specified category.
-func NewPermByPairCategory(key string, value string, category string) *Perm {
+// MustNewPermByPairCategory creates a new Perm with a specified category.
+func MustNewPermByPairCategory(key string, value string, category string) *Perm {
 	key = strings.ToLower(strings.TrimSpace(key))
 	value = strings.ToUpper(strings.TrimSpace(value))
 	category = strings.TrimSpace(category)

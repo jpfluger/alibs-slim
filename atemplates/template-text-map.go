@@ -43,10 +43,12 @@ func GetTextTemplateFunctions(fmapType TemplateFunctions) *ttemplate.FuncMap {
 			"CurrentYearUTC":            atime.CurrentYearUTC,
 
 			// String manipulation functions.
-			"ToUpper":      strings.ToUpper,
-			"ToLower":      strings.ToLower,
-			"ToUpperFirst": ToUpperFirst,
-			"Title":        Title,
+			"ToUpper":        strings.ToUpper,
+			"ToLower":        strings.ToLower,
+			"ToUpperFirst":   ToUpperFirst,
+			"Title":          Title,
+			"TruncateString": TruncateString,
+			"SliceString":    SliceString,
 
 			// Conversion functions.
 			"ToInt":       ToInt,

@@ -1,15 +1,15 @@
 package asessions
 
 import (
-	"github.com/stretchr/testify/assert"
 	"github.com/jpfluger/alibs-slim/auser"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestUIDsPermSet_Validate(t *testing.T) {
 	validUUID := auser.NewUID()
 	validUIDs := auser.UIDs{validUUID}
-	validPerms := NewPermSetByBits("read", PERM_R)
+	validPerms := MustNewPermSetByBits("read", PERM_R)
 	validUIDsPermSet := &UIDsPermSet{
 		UIDs:  validUIDs,
 		Perms: validPerms,
@@ -64,7 +64,7 @@ func TestUIDsPermSet_RemoveUID(t *testing.T) {
 
 func TestUIDsPermSet_HasPerm(t *testing.T) {
 	uid := auser.NewUID()
-	perms := NewPermSetByBits("read", PERM_R)
+	perms := MustNewPermSetByBits("read", PERM_R)
 	ups := &UIDsPermSet{
 		UIDs:  auser.UIDs{uid},
 		Perms: perms,
@@ -75,7 +75,7 @@ func TestUIDsPermSet_HasPerm(t *testing.T) {
 
 func TestUIDsPermSets_Validate(t *testing.T) {
 	uid := auser.NewUID()
-	validPerms := NewPermSetByBits("read", PERM_R)
+	validPerms := MustNewPermSetByBits("read", PERM_R)
 	validUIDsPermSet := &UIDsPermSet{
 		UIDs:  auser.UIDs{uid},
 		Perms: validPerms,
@@ -86,57 +86,57 @@ func TestUIDsPermSets_Validate(t *testing.T) {
 
 func TestUIDsPermSets_GetUIDCountByPerm(t *testing.T) {
 	uid := auser.NewUID()
-	perms := NewPermSetByBits("read", PERM_R)
+	perms := MustNewPermSetByBits("read", PERM_R)
 	ups := &UIDsPermSet{
 		UIDs:  auser.UIDs{uid},
 		Perms: perms,
 	}
 	upss := UIDsPermSets{ups}
-	assert.Equal(t, 1, upss.GetUIDCountByPerm(*NewPermByPair("read", "R")))
-	assert.Equal(t, 0, upss.GetUIDCountByPerm(*NewPermByPair("write", "W")))
+	assert.Equal(t, 1, upss.GetUIDCountByPerm(*MustNewPermByPair("read", "R")))
+	assert.Equal(t, 0, upss.GetUIDCountByPerm(*MustNewPermByPair("write", "W")))
 }
 
 func TestUIDsPermSets_HasUIDByPerm(t *testing.T) {
 	uid := auser.NewUID()
-	perms := NewPermSetByBits("read", PERM_R)
+	perms := MustNewPermSetByBits("read", PERM_R)
 	ups := &UIDsPermSet{
 		UIDs:  auser.UIDs{uid},
 		Perms: perms,
 	}
 	upss := UIDsPermSets{ups}
-	assert.True(t, upss.HasUIDByPerm(*NewPermByPair("read", "R"), uid))
+	assert.True(t, upss.HasUIDByPerm(*MustNewPermByPair("read", "R"), uid))
 
 	nonExistentUID := auser.NewUID()
-	assert.False(t, upss.HasUIDByPerm(*NewPermByPair("read", "R"), nonExistentUID))
+	assert.False(t, upss.HasUIDByPerm(*MustNewPermByPair("read", "R"), nonExistentUID))
 }
 
 func TestUIDsPermSets_SetUIDByPerm(t *testing.T) {
 	uid := auser.NewUID()
-	perms := NewPermSetByBits("read", PERM_R)
+	perms := MustNewPermSetByBits("read", PERM_R)
 	ups := &UIDsPermSet{
 		UIDs:  auser.UIDs{},
 		Perms: perms,
 	}
 	upss := UIDsPermSets{ups}
-	upss.SetUIDByPerm(*NewPermByPair("read", "R"), uid)
+	upss.SetUIDByPerm(*MustNewPermByPair("read", "R"), uid)
 	assert.Contains(t, upss[0].UIDs, uid)
 }
 
 func TestUIDsPermSets_RemoveUIDByPerm(t *testing.T) {
 	uid := auser.NewUID()
-	perms := NewPermSetByBits("read", PERM_R)
+	perms := MustNewPermSetByBits("read", PERM_R)
 	ups := &UIDsPermSet{
 		UIDs:  auser.UIDs{uid},
 		Perms: perms,
 	}
 	upss := UIDsPermSets{ups}
-	upss.RemoveUIDByPerm(*NewPermByPair("read", "R"), uid)
+	upss.RemoveUIDByPerm(*MustNewPermByPair("read", "R"), uid)
 	assert.NotContains(t, upss[0].UIDs, uid)
 }
 
 func TestUIDsPermSets_Clean(t *testing.T) {
 	uid := auser.NewUID()
-	perms := NewPermSetByBits("read", PERM_R)
+	perms := MustNewPermSetByBits("read", PERM_R)
 	ups := &UIDsPermSet{
 		UIDs:  auser.UIDs{uid, auser.UID{}},
 		Perms: perms,
@@ -169,7 +169,7 @@ func TestCreateSingleUIDsPermSetsByKVPair(t *testing.T) {
 
 func TestCreateSingleUIDsPermSets(t *testing.T) {
 	uid := auser.NewUID()
-	perms := NewPermSetByBits("read", PERM_R)
+	perms := MustNewPermSetByBits("read", PERM_R)
 	upss := CreateSingleUIDsPermSets(perms, uid)
 
 	assert.Len(t, upss, 1)

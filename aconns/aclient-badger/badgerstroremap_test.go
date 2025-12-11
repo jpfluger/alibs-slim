@@ -3,7 +3,7 @@ package aclient_badger
 import (
 	"testing"
 
-	"github.com/alexedwards/scs/badgerstore"
+	"github.com/jpfluger/alibs-slim/aconns/aclient-badger/badgerstore"
 	"github.com/stretchr/testify/assert"
 )
 

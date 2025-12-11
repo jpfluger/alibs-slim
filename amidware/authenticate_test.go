@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/jpfluger/alibs-slim/asessions"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	"github.com/jpfluger/alibs-slim/asessions"
 )
 
 // mockAuthenticateProvisioner implements the IAuthenticateProvisioner interface for testing.
@@ -35,13 +35,13 @@ func TestAuthenticateConfig_ValidPerm(t *testing.T) {
 	// Create a mock session and set it in the Echo context.
 	session := asessions.NewUserSessionPerm()
 	session.Status = asessions.LOGIN_SESSION_STATUS_OK
-	session.Perms = asessions.NewPermSetByPair("read", "XLCRUD")
+	session.Perms = asessions.MustNewPermSetByPair("read", "XLCRUD")
 
 	// Add the session to the context.
 	c.Set(asessions.ECHOSCS_OBJECTKEY_USER_SESSION, session)
 
 	// Define permissions required for the test.
-	requiredPerms := asessions.NewPermSetByBits("read", asessions.PERM_R)
+	requiredPerms := asessions.MustNewPermSetByBits("read", asessions.PERM_R)
 
 	// Initialize the middleware with a mock provisioner.
 	middleware := NewAuthenticatePermConfig(requiredPerms, &mockAuthenticateProvisioner{})
@@ -69,13 +69,13 @@ func TestAuthenticateConfig_InvalidPerm(t *testing.T) {
 	// Create a mock session and set it in the Echo context.
 	session := asessions.NewUserSessionPerm()
 	session.Status = asessions.LOGIN_SESSION_STATUS_OK
-	session.Perms = asessions.NewPermSetByPair("read", "X")
+	session.Perms = asessions.MustNewPermSetByPair("read", "X")
 
 	// Add the session to the context.
 	c.Set(asessions.ECHOSCS_OBJECTKEY_USER_SESSION, session)
 
 	// Define permissions required for the test.
-	requiredPerms := asessions.NewPermSetByBits("read", asessions.PERM_R)
+	requiredPerms := asessions.MustNewPermSetByBits("read", asessions.PERM_R)
 
 	// Initialize the middleware with a mock provisioner.
 	middleware := NewAuthenticatePermConfig(requiredPerms, &mockAuthenticateProvisioner{})

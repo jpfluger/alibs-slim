@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/jpfluger/alibs-slim/aconns"
+	"github.com/jpfluger/alibs-slim/acrypt"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,6 +70,12 @@ func TestAClientBadger_Test_Success(t *testing.T) {
 }
 
 func TestAClientBadger_Test_Success_WithEncryption(t *testing.T) {
+	pass, err := acrypt.GenerateEncryptionKeyWithLengthBase64(16)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
 	tempDir := t.TempDir()
 	cn := &AClientBadger{
 		ADBAdapterBase: aconns.ADBAdapterBase{
@@ -80,7 +87,7 @@ func TestAClientBadger_Test_Success_WithEncryption(t *testing.T) {
 			},
 			Database: tempDir,
 			Username: "badger",
-			Password: "thisis16byteskey", // 16-byte password for AES-128 encryption
+			Password: pass, // "thisis16byteskey", // 16-byte password for AES-128 encryption
 		},
 	}
 

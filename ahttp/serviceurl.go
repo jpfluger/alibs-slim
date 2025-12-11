@@ -15,6 +15,7 @@ import (
 // and TLS certificate information if applicable.
 type ServiceUrl struct {
 	ListenPort int    `json:"listenPort"`         // Port on which the service listens, between 1 and 65535.
+	HasProxy   bool   `json:"hasProxy"`           // If true, then ignore cert-file checks when PublicUrl prefix is "https".
 	PublicUrl  string `json:"publicUrl"`          // Public URL for the service.
 	CertFile   string `json:"certFile,omitempty"` // Path to the TLS certificate file (required if using HTTPS).
 	KeyFile    string `json:"keyFile,omitempty"`  // Path to the TLS key file (required if using HTTPS).
@@ -90,6 +91,10 @@ func (su *ServiceUrl) Validate() error {
 	if su.isTLS {
 		if su.certStorage != nil {
 			if _, err = su.certStorage.ToTLSCertificate(); err != nil {
+				if su.HasProxy {
+					su.isTLS = false
+					return nil // ignore, since there is a proxy
+				}
 				return fmt.Errorf("invalid cert storage: %v", err)
 			}
 			// CertStorage is valid, so skip file checks.
@@ -107,9 +112,17 @@ func (su *ServiceUrl) Validate() error {
 			}
 		}
 		if _, err = autils.ResolveFile(su.CertFile); err != nil {
+			if su.HasProxy {
+				su.isTLS = false
+				return nil // ignore, since there is a proxy
+			}
 			return fmt.Errorf("cert file is required when using HTTPS; %v", err)
 		}
 		if _, err = autils.ResolveFile(su.KeyFile); err != nil {
+			if su.HasProxy {
+				su.isTLS = false
+				return nil // ignore, since there is a proxy
+			}
 			return fmt.Errorf("key file is required when using HTTPS; %v", err)
 		}
 	}

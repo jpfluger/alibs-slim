@@ -1,8 +1,9 @@
 package asessions
 
 import (
-	"github.com/jpfluger/alibs-slim/azb"
 	"strings"
+
+	"github.com/jpfluger/alibs-slim/azb"
 )
 
 // ActionKey is a type that represents a key for an action.
@@ -43,6 +44,11 @@ func (aks ActionKeys) Find(key ActionKey) ActionKey {
 		}
 	}
 	return ""
+}
+
+// IsEmpty checks if the ActionKeys array has any values.
+func (aks ActionKeys) IsEmpty() bool {
+	return aks == nil || len(aks) == 0
 }
 
 // Has checks if a given key exists within the ActionKeys slice.

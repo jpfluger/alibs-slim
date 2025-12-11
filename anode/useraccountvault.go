@@ -1,9 +1,10 @@
 package anode
 
 import (
+	"time"
+
 	"github.com/jpfluger/alibs-slim/acrypt"
 	"github.com/jpfluger/alibs-slim/atime"
-	"time"
 )
 
 // UserVault represents a user's vault containing credentials, TOTP, and backup tokens.

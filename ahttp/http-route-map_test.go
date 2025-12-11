@@ -1,8 +1,8 @@
 package ahttp
 
 import (
-	"github.com/labstack/echo/v4"
 	"github.com/jpfluger/alibs-slim/asessions"
+	"github.com/labstack/echo/v4"
 	"sync"
 	"testing"
 
@@ -28,7 +28,7 @@ func (m *MockRoute) GetPerms() asessions.PermSet {
 	if m.perms != nil && len(m.perms) > 0 {
 		pset := asessions.PermSet{}
 		for _, perm := range m.perms {
-			pset.SetPerm(asessions.NewPerm(perm))
+			pset.SetPerm(asessions.MustNewPerm(perm))
 		}
 		pset = pset
 	}

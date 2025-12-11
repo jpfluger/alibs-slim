@@ -35,9 +35,9 @@ func TestSessionUserSession(t *testing.T) {
 	session := SCSLoadAndSave(sessionManager, true)
 
 	am := &asessions.PermSet{}
-	am.SetPerm(asessions.NewPerm("access:X"))
-	am.SetPerm(asessions.NewPerm("admin:XCRUD"))
-	am.SetPerm(asessions.NewPerm("employee:"))
+	am.SetPerm(asessions.MustNewPerm("access:X"))
+	am.SetPerm(asessions.MustNewPerm("admin:XCRUD"))
+	am.SetPerm(asessions.MustNewPerm("employee:"))
 
 	h := session(func(c echo.Context) error {
 		sessionManager.Put(c.Request().Context(), "message", "Hello from a session!")

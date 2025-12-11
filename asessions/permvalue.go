@@ -74,8 +74,8 @@ type PermValue struct {
 	value int
 }
 
-// NewPermValue creates a PermValue from a string representation
-func NewPermValue(value string) *PermValue {
+// MustNewPermValue creates a PermValue from a string representation
+func MustNewPermValue(value string) *PermValue {
 	pv := &PermValue{}
 	pv.SetValues(value)
 	return pv
@@ -185,7 +185,7 @@ func (pv *PermValue) MatchOne(permChars string) bool {
 	if pv == nil || permChars == "" {
 		return false
 	}
-	target := NewPermValue(permChars)
+	target := MustNewPermValue(permChars)
 	return pv.value&target.value != 0
 }
 
@@ -210,7 +210,7 @@ func (pv *PermValue) MergePermsByChars(permChars string) {
 	if pv == nil {
 		return
 	}
-	target := NewPermValue(permChars)
+	target := MustNewPermValue(permChars)
 	pv.value |= target.value
 }
 
@@ -227,7 +227,7 @@ func (pv *PermValue) HasExcessiveChars(targetPermChars string) bool {
 	if pv == nil {
 		return false
 	}
-	target := NewPermValue(targetPermChars)
+	target := MustNewPermValue(targetPermChars)
 	return pv.value&^target.value != 0
 }
 
@@ -244,7 +244,7 @@ func (pv *PermValue) ReplaceExcessiveChars(permChars string) {
 	if pv == nil {
 		return
 	}
-	target := NewPermValue(permChars)
+	target := MustNewPermValue(permChars)
 	pv.value &= target.value
 }
 
@@ -261,7 +261,7 @@ func (pv *PermValue) SubtractPermsByChars(permChars string) {
 	if pv == nil {
 		return
 	}
-	target := NewPermValue(permChars)
+	target := MustNewPermValue(permChars)
 	pv.value &^= target.value
 }
 
@@ -330,8 +330,8 @@ func (pv *PermValue) UnmarshalJSON(data []byte) error {
 //	D bool // Delete permission flag
 //}
 //
-//// NewPermValue creates a new PermValue and sets its values based on the input string.
-//func NewPermValue(value string) *PermValue {
+//// MustNewPermValue creates a new PermValue and sets its values based on the input string.
+//func MustNewPermValue(value string) *PermValue {
 //	pv := &PermValue{}
 //	pv.SetValues(value)
 //	return pv

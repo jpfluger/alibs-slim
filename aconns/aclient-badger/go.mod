@@ -5,8 +5,6 @@ go 1.25.0
 replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
-	// pull in the original module path, but…
-	github.com/alexedwards/scs/badgerstore v0.0.0-20251128161732-71cc7eb667f2
 	github.com/dgraph-io/badger/v4 v4.8.0
 	github.com/jpfluger/alibs-slim v0.9.11
 	github.com/stretchr/testify v1.11.1
@@ -54,5 +52,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// use your fork's code for that module path
-replace github.com/alexedwards/scs/badgerstore => github.com/jpfluger/scs/badgerstore v0.0.0-20251128161732-71cc7eb667f2
+//// use your fork's code for that module path
+//replace github.com/alexedwards/scs/badgerstore => github.com/jpfluger/scs/badgerstore v0.0.0-20251128161732-71cc7eb667f2
