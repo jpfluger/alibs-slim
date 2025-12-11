@@ -6,7 +6,7 @@ replace github.com/jpfluger/alibs-slim => ../../../alibs-slim
 
 require (
 	github.com/dgraph-io/badger/v4 v4.8.0
-	github.com/jpfluger/alibs-slim v0.9.11
+	github.com/jpfluger/alibs-slim v0.9.12
 	github.com/stretchr/testify v1.11.1
 )
 
