@@ -1,5 +1,13 @@
 # alibs-slim
 
+🛑 **ARCHIVED PROJECT**  
+This repository represents an older version of this project and is no longer actively maintained here. It has been left public for educational purposes.
+
+🟢 **Note to prospective team members:**  
+This repo is a time capsule — old, strange, and unapologetic. Want a seat at my table? Stow your AI toolbox. The whiteboard awaits.  Dissect the code. Ruthlessly roast my old design decisions. Then let’s talk real enterprise architecture, cybersecurity, and networking — the kind that survives in the trenches, not just white-room theory.
+
+---
+
 Common shared libraries that serve as the plumbing for a myriad of [`golang`](https://go.dev/) binaries, with web-related constructs built around the [`Echo Framework`](https://echo.labstack.com/).
 
 ## aconns
